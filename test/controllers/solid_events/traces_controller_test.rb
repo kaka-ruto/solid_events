@@ -66,6 +66,7 @@ module SolidEvents
       assert_includes @response.body, "Regression Candidates"
       assert_includes @response.body, "New Error Fingerprints"
       assert_includes @response.body, "Since Current Deploy/Version"
+      assert_includes @response.body, "Compare Metrics"
 
       get "/solid_events", params: {entity_type: "Order", entity_id: "987"}
       assert_response :success
@@ -96,6 +97,50 @@ module SolidEvents
       assert_response :success
       assert_includes @response.body, "Hot Path Drilldown"
       assert_includes @response.body, "Hourly Buckets"
+    end
+
+    test "index compare panel supports custom windows and metrics" do
+      now_trace = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "error",
+        started_at: 2.hours.ago
+      )
+      SolidEvents::Summary.create!(
+        trace: now_trace,
+        name: now_trace.name,
+        trace_type: now_trace.trace_type,
+        source: now_trace.source,
+        status: "error",
+        started_at: 2.hours.ago,
+        finished_at: 2.hours.ago + 1.minute,
+        duration_ms: 400.0
+      )
+
+      baseline_trace = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "ok",
+        started_at: 26.hours.ago
+      )
+      SolidEvents::Summary.create!(
+        trace: baseline_trace,
+        name: baseline_trace.name,
+        trace_type: baseline_trace.trace_type,
+        source: baseline_trace.source,
+        status: "ok",
+        started_at: 26.hours.ago,
+        finished_at: 26.hours.ago + 1.minute,
+        duration_ms: 100.0
+      )
+
+      get "/solid_events", params: {compare_metric: "latency_avg", compare_window: "24h", compare_baseline_window: "24h", compare_dimension: "source"}
+      assert_response :success
+      assert_includes @response.body, "Current window"
+      assert_includes @response.body, "Baseline window"
+      assert_includes @response.body, "CheckoutController#create"
     end
 
     test "can disable request-time incident evaluation" do

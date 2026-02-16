@@ -99,7 +99,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Incident feed with lifecycle actions
 - [x] Hot-path drilldown with percentile/error buckets
 - [ ] Saved views / shared investigation links
-- [ ] UI compare mode (release A vs release B, cohort A vs cohort B)
+- [x] UI compare mode (release A vs release B, cohort A vs cohort B)
 - [ ] Timeline view optimized for “tell me what happened” narratives
 
 ## 9) Agent-readiness (observability side only)

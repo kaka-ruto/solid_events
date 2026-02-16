@@ -57,6 +57,7 @@ Stop renting your data.
 - **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
 - **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
 - **🤖 Consumer APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
+- **📈 Compare Mode:** UI + API support for window-over-window error-rate and latency comparisons.
 - **🔐 API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 

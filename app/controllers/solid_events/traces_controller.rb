@@ -4,6 +4,8 @@ require "set"
 module SolidEvents
   class TracesController < ApplicationController
     PER_PAGE_OPTIONS = [25, 50, 100].freeze
+    COMPARE_DIMENSIONS = %w[source name deployment_id service_version environment_name entity_type].freeze
+    COMPARE_METRICS = %w[error_rate latency_avg].freeze
 
     before_action :set_trace, only: :show
 
@@ -59,6 +61,7 @@ module SolidEvents
       SolidEvents::IncidentEvaluator.evaluate! if SolidEvents.evaluate_incidents_on_request?
       load_slo_panel(scope)
       load_index_insights
+      load_compare_panel
       load_incidents
     end
 
@@ -332,6 +335,102 @@ module SolidEvents
       @new_error_fingerprints = []
       @hot_paths = []
       @new_error_fingerprints_since_deploy = []
+    end
+
+    def load_compare_panel
+      @compare_dimension = params[:compare_dimension].to_s
+      @compare_dimension = "source" unless @compare_dimension.in?(COMPARE_DIMENSIONS)
+      @compare_metric = params[:compare_metric].to_s
+      @compare_metric = "error_rate" unless @compare_metric.in?(COMPARE_METRICS)
+      @compare_window = params[:compare_window].to_s
+      @compare_window = "24h" unless @compare_window.in?(%w[1h 24h 7d 30d])
+      @compare_baseline_window = params[:compare_baseline_window].to_s
+      @compare_baseline_window = @compare_window unless @compare_baseline_window.in?(%w[1h 24h 7d 30d])
+      @compare_rows = []
+      return unless summary_table_available?
+
+      windows = compare_windows
+      scope = SolidEvents::Summary.all
+      current = grouped_compare_stats(scope.where(started_at: windows[:current_start]..windows[:current_end]))
+      baseline = grouped_compare_stats(scope.where(started_at: windows[:baseline_start]..windows[:baseline_end]))
+      keys = (current.keys + baseline.keys).uniq
+      @compare_rows = keys.map do |key|
+        current_stats = current.fetch(key, compare_default_stats)
+        baseline_stats = baseline.fetch(key, compare_default_stats)
+        current_value = compare_metric_value(current_stats)
+        baseline_value = compare_metric_value(baseline_stats)
+        delta = (current_value - baseline_value).round(2)
+        {
+          key: key,
+          current: current_value,
+          baseline: baseline_value,
+          delta: delta,
+          delta_pct: compare_delta_pct(current_value, baseline_value),
+          current_count: current_stats[:count],
+          baseline_count: baseline_stats[:count]
+        }
+      end.sort_by { |row| [-row[:current_count], row[:key].to_s] }.first(10)
+    end
+
+    def compare_windows
+      current_duration = compare_window_duration(@compare_window)
+      baseline_duration = compare_window_duration(@compare_baseline_window)
+      current_end = Time.current
+      current_start = current_end - current_duration
+      baseline_end = current_start
+      baseline_start = baseline_end - baseline_duration
+      {
+        current_start: current_start,
+        current_end: current_end,
+        baseline_start: baseline_start,
+        baseline_end: baseline_end
+      }
+    end
+
+    def compare_window_duration(window)
+      case window
+      when "1h" then 1.hour
+      when "7d" then 7.days
+      when "30d" then 30.days
+      else 24.hours
+      end
+    end
+
+    def grouped_compare_stats(scope)
+      scope.group(@compare_dimension)
+        .pluck(
+          @compare_dimension,
+          Arel.sql("COUNT(*)"),
+          Arel.sql("SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END)"),
+          Arel.sql("AVG(duration_ms)")
+        ).each_with_object({}) do |(key, count, error_count, avg_duration), memo|
+          memo[key] = {
+            count: count.to_i,
+            error_count: error_count.to_i,
+            avg_duration: avg_duration.to_f.round(2)
+          }
+        end
+    end
+
+    def compare_metric_value(stats)
+      if @compare_metric == "latency_avg"
+        stats[:avg_duration].to_f.round(2)
+      else
+        return 0.0 if stats[:count].to_i.zero?
+
+        ((stats[:error_count].to_f / stats[:count]) * 100.0).round(2)
+      end
+    end
+
+    def compare_delta_pct(current_value, baseline_value)
+      baseline = baseline_value.to_f
+      return nil if baseline.zero?
+
+      (((current_value.to_f - baseline) / baseline) * 100.0).round(2)
+    end
+
+    def compare_default_stats
+      {count: 0, error_count: 0, avg_duration: 0.0}
     end
 
     def percentile(sorted_values, ratio)

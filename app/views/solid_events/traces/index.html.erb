@@ -101,6 +101,68 @@
 </div>
 
 <div class="card">
+  <h3>Compare Metrics</h3>
+  <%= form_with url: traces_path, method: :get, local: true do |f| %>
+    <% request.query_parameters.each do |key, value| %>
+      <% next if key.in?(%w[compare_dimension compare_metric compare_window compare_baseline_window page]) %>
+      <%= hidden_field_tag key, value %>
+    <% end %>
+    <div class="filters-grid">
+      <div>
+        <%= f.label :compare_metric, "Metric" %>
+        <%= f.select :compare_metric, options_for_select([["Error Rate %", "error_rate"], ["Avg Latency (ms)", "latency_avg"]], @compare_metric) %>
+      </div>
+      <div>
+        <%= f.label :compare_dimension, "Group by" %>
+        <%= f.select :compare_dimension, options_for_select([["Source", "source"], ["Name", "name"], ["Deployment", "deployment_id"], ["Version", "service_version"], ["Environment", "environment_name"], ["Entity Type", "entity_type"]], @compare_dimension) %>
+      </div>
+      <div>
+        <%= f.label :compare_window, "Current window" %>
+        <%= f.select :compare_window, options_for_select([["1 hour", "1h"], ["24 hours", "24h"], ["7 days", "7d"], ["30 days", "30d"]], @compare_window) %>
+      </div>
+      <div>
+        <%= f.label :compare_baseline_window, "Baseline window" %>
+        <%= f.select :compare_baseline_window, options_for_select([["1 hour", "1h"], ["24 hours", "24h"], ["7 days", "7d"], ["30 days", "30d"]], @compare_baseline_window) %>
+      </div>
+    </div>
+    <div class="actions">
+      <%= f.submit "Compare" %>
+    </div>
+  <% end %>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Value</th>
+          <th>Current</th>
+          <th>Baseline</th>
+          <th>Delta</th>
+          <th>Delta %</th>
+          <th>Current Samples</th>
+          <th>Baseline Samples</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @compare_rows.each do |row| %>
+          <tr>
+            <td><%= row[:key].presence || "n/a" %></td>
+            <td><%= row[:current] %></td>
+            <td><%= row[:baseline] %></td>
+            <td><%= row[:delta] %></td>
+            <td><%= row[:delta_pct].nil? ? "n/a" : "#{row[:delta_pct]}%" %></td>
+            <td><%= row[:current_count] %></td>
+            <td><%= row[:baseline_count] %></td>
+          </tr>
+        <% end %>
+        <% if @compare_rows.empty? %>
+          <tr><td colspan="7" class="muted">No data for compare view yet.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
   <h3>Incidents Feed</h3>
   <div class="table-scroll">
     <table class="events-table">
