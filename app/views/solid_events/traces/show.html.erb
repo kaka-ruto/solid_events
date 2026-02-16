@@ -51,6 +51,14 @@
     Same Fingerprint Traces: <strong><%= @correlation[:fingerprint_trace_count] %></strong> |
     Same Fingerprint Errors: <strong><%= @correlation[:fingerprint_error_count] %></strong>
   </p>
+  <p>
+    <% if @trace.summary&.entity_type.present? && @trace.summary&.entity_id.present? %>
+      <%= link_to "Open all traces for this entity", traces_path(entity_type: @trace.summary.entity_type, entity_id: @trace.summary.entity_id), class: "button button-muted" %>
+    <% end %>
+    <% if @trace.summary&.error_fingerprint.present? %>
+      <%= link_to "Open all traces for this error fingerprint", traces_path(context_key: "error_fingerprint", context_id: @trace.summary.error_fingerprint), class: "button button-muted" %>
+    <% end %>
+  </p>
   <p class="muted">
     Duration Trend (24h vs prior 7d): <%= @correlation[:recent_avg_duration_ms] || "n/a" %> ms vs <%= @correlation[:baseline_avg_duration_ms] || "n/a" %> ms
     (<%= duration_delta_label(@correlation[:recent_avg_duration_ms], @correlation[:baseline_avg_duration_ms]) %>)
@@ -60,6 +68,68 @@
       <span class="badge ok">stable</span>
     <% end %>
   </p>
+</div>
+
+<div class="card">
+  <h3>Related Traces by Entity</h3>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Trace</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Source</th>
+          <th>Started</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @related_entity_traces.each do |trace| %>
+          <tr>
+            <td><%= link_to trace.id, trace_path(trace) %></td>
+            <td><%= trace.name %></td>
+            <td><span class="badge <%= trace_status_badge(trace.status) %>"><%= trace.status %></span></td>
+            <td><%= trace.source %></td>
+            <td title="<%= absolute_time(trace.started_at) %>"><%= relative_time(trace.started_at) %></td>
+          </tr>
+        <% end %>
+        <% if @related_entity_traces.empty? %>
+          <tr><td colspan="5" class="muted">No related entity traces.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Related Traces by Error Fingerprint</h3>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Trace</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Source</th>
+          <th>Started</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @related_fingerprint_traces.each do |trace| %>
+          <tr>
+            <td><%= link_to trace.id, trace_path(trace) %></td>
+            <td><%= trace.name %></td>
+            <td><span class="badge <%= trace_status_badge(trace.status) %>"><%= trace.status %></span></td>
+            <td><%= trace.source %></td>
+            <td title="<%= absolute_time(trace.started_at) %>"><%= relative_time(trace.started_at) %></td>
+          </tr>
+        <% end %>
+        <% if @related_fingerprint_traces.empty? %>
+          <tr><td colspan="5" class="muted">No related fingerprint traces.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <div class="card">

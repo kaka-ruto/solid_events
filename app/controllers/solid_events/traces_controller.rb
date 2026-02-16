@@ -58,6 +58,7 @@ module SolidEvents
       @error_links = @trace.error_links
       @event_counts = @events.reorder(nil).group(:event_type).count
       load_correlation_pivots
+      load_related_traces
     end
 
     private
@@ -168,6 +169,29 @@ module SolidEvents
           @correlation[:recent_avg_duration_ms] > (@correlation[:baseline_avg_duration_ms] * 1.5) &&
           (@correlation[:recent_avg_duration_ms] - @correlation[:baseline_avg_duration_ms]) >= 50
       end
+    end
+
+    def load_related_traces
+      @related_entity_traces = []
+      @related_fingerprint_traces = []
+      return unless summary_table_available?
+      return unless @trace.summary
+
+      base_scope = SolidEvents::Trace.recent.where.not(id: @trace.id).includes(:summary)
+
+      if @trace.summary.entity_type.present? && @trace.summary.entity_id.present?
+        @related_entity_traces = base_scope
+          .left_outer_joins(:summary)
+          .where(solid_events_summaries: {entity_type: @trace.summary.entity_type, entity_id: @trace.summary.entity_id})
+          .limit(10)
+      end
+
+      return unless @trace.summary.error_fingerprint.present?
+
+      @related_fingerprint_traces = base_scope
+        .left_outer_joins(:summary)
+        .where(solid_events_summaries: {error_fingerprint: @trace.summary.error_fingerprint})
+        .limit(10)
     end
   end
 end
