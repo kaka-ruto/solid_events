@@ -7,6 +7,12 @@ Instructions for AI coding agents working in this gem.
 - This repository is the `solid_events` Rails engine gem.
 - Follow conventions and structure consistent with the solid_* family.
 - Keep naming consistent with `SolidEvents`.
+- `solid_events` owns observability and incident state only:
+  - detect incidents from event/trace data
+  - store traces/events/summaries/incidents
+  - expose state via UI and API
+  - manage incident lifecycle state transitions
+- Do not add automation/executor logic here (code fixing, PR creation, QA execution, runtime adapters); that belongs in `solid_agents`.
 
 ## Development rules
 
