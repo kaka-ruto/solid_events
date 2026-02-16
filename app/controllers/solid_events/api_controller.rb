@@ -160,24 +160,18 @@ module SolidEvents
     end
 
     def suggested_commands_for(incident:)
-      base_commands = []
+      commands = []
       if incident.source.to_s.include?("#")
         controller = incident.source.to_s.split("#").first.underscore
-        base_commands << "bin/rails test test/controllers/#{controller}_test.rb"
+        controller_test = "test/controllers/#{controller}_test.rb"
+        commands << "bin/rails test #{controller_test}" if file_exists?(controller_test) && file_exists?("bin/rails")
       end
 
-      preset = case incident.kind.to_s
-      when "new_fingerprint"
-        ["bin/rails test", "bin/rails test:system"]
-      when "error_spike"
-        ["bin/rails test", "bin/rubocop"]
-      when "p95_regression"
-        ["bin/rails test", "bin/rails test test/performance"]
-      else
-        ["bin/rails test"]
-      end
+      commands << default_test_command
+      commands << lint_command_if_available
+      commands << kind_specific_optional_command(incident)
 
-      (base_commands + preset).uniq
+      commands.compact.uniq
     end
 
     def context_payload_for(incident)
@@ -212,6 +206,12 @@ module SolidEvents
 
       {
         incident: serialize_incident(incident),
+        command_policy: {
+          cwd: "repository_root",
+          use_repo_wrappers: true,
+          avoid_global_tools: true,
+          optional_commands_marked: true
+        },
         suggested_commands: suggested_commands_for(incident: incident),
         suspected_files: suspect_files_for(incident: incident, trace: primary_trace),
         run_sequence: [
@@ -223,6 +223,30 @@ module SolidEvents
           "Resolve incident via API when verified"
         ]
       }
+    end
+
+    def default_test_command
+      return "bin/rails test" if file_exists?("bin/rails")
+
+      "bundle exec rails test"
+    end
+
+    def lint_command_if_available
+      return "bin/rubocop" if file_exists?("bin/rubocop")
+      return "bundle exec rubocop" if file_exists?(".rubocop.yml")
+
+      nil
+    end
+
+    def kind_specific_optional_command(incident)
+      case incident.kind.to_s
+      when "new_fingerprint"
+        file_exists?("bin/rails") ? "bin/rails test:system # optional" : nil
+      when "p95_regression"
+        file_exists?("test/performance") ? "bin/rails test test/performance # optional" : nil
+      else
+        nil
+      end
     end
 
     def incident_related_traces(incident)
@@ -302,6 +326,10 @@ module SolidEvents
       end
     rescue StandardError
       []
+    end
+
+    def file_exists?(path)
+      Rails.root.join(path).exist?
     end
   end
 end

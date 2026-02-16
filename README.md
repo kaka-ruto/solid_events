@@ -218,7 +218,8 @@ Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-
 Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.
 
 `context` and `commands` are split endpoints; `handoff` returns both in one response.
-`context` includes `solid_errors` enrichment when available, and `commands` are incident-kind aware.
+`context` includes `solid_errors` enrichment when available, and `commands` are incident-kind aware,
+repo-wrapper-first, and conservative across different team/project toolchains.
 
 ### Scheduling (Production)
 

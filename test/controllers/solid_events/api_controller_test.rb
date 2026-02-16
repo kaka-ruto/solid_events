@@ -164,7 +164,8 @@ module SolidEvents
       assert_equal incident.id, payload["incident"]["id"]
       assert payload["run_sequence"].any?
       assert payload["suggested_commands"].any?
-      assert_includes payload["suggested_commands"], "bin/rubocop"
+      assert_equal "repository_root", payload["command_policy"]["cwd"]
+      assert payload["suggested_commands"].any? { |command| command.include?("rails test") }
     end
 
     test "incident handoff combines context and commands" do
