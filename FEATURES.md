@@ -102,7 +102,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Incident shortcuts to open related journey views quickly
 - [ ] Saved views / shared investigation links
 - [x] UI compare mode (release A vs release B, cohort A vs cohort B)
-- [ ] Timeline view optimized for “tell me what happened” narratives
+- [x] Timeline view optimized for “tell me what happened” narratives
 
 ## 9) Agent-readiness (observability side only)
 

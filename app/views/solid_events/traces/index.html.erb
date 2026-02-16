@@ -215,9 +215,11 @@
               <% if journey[:request_id].present? %>
                 <%= link_to "API", "/solid_events/api/journeys?request_id=#{CGI.escape(journey[:request_id])}&window=#{@window}", class: "button button-muted" %>
                 <%= link_to "Traces", traces_path(request_id: journey[:request_id]), class: "button button-muted" %>
+                <%= link_to "Timeline", "/solid_events/timeline?request_id=#{CGI.escape(journey[:request_id])}&window=#{@window}", class: "button button-muted" %>
               <% elsif journey[:entity_type].present? && journey[:entity_id].present? %>
                 <%= link_to "API", "/solid_events/api/journeys?entity_type=#{CGI.escape(journey[:entity_type])}&entity_id=#{journey[:entity_id]}&window=#{@window}", class: "button button-muted" %>
                 <%= link_to "Traces", traces_path(entity_type: journey[:entity_type], entity_id: journey[:entity_id]), class: "button button-muted" %>
+                <%= link_to "Timeline", "/solid_events/timeline?entity_type=#{CGI.escape(journey[:entity_type])}&entity_id=#{journey[:entity_id]}&window=#{@window}", class: "button button-muted" %>
               <% end %>
             </td>
           </tr>

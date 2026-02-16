@@ -1,0 +1,41 @@
+<div class="card">
+  <div class="trace-header">
+    <h2>Timeline View</h2>
+    <%= link_to "Back to Traces", traces_path, class: "button button-muted" %>
+  </div>
+  <p>
+    Request ID: <strong><%= @request_id.presence || "n/a" %></strong> |
+    Entity: <strong><%= @entity_type.presence || "n/a" %>#<%= @entity_id.presence || "n/a" %></strong> |
+    Window: <strong><%= @window %></strong>
+  </p>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>At</th>
+          <th>Kind</th>
+          <th>Label</th>
+          <th>Trace</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @timeline_rows.each do |row| %>
+          <tr>
+            <td title="<%= absolute_time(row[:at]) %>"><%= relative_time(row[:at]) %></td>
+            <td><span class="badge muted"><%= row[:kind] %></span></td>
+            <td><%= row[:label] %></td>
+            <td><%= link_to row[:trace_id], trace_path(row[:trace_id]) %></td>
+            <td><%= row[:details].presence || "n/a" %></td>
+          </tr>
+        <% end %>
+        <% if @timeline_rows.empty? %>
+          <tr><td colspan="5" class="muted">No timeline data for this query and window.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -60,6 +60,7 @@ module SolidEvents
       assert_includes @response.body, "Context Graph"
       assert_includes @response.body, "Incidents Feed"
       assert_includes @response.body, "Journey Sequences"
+      assert_includes @response.body, "Timeline"
       assert_includes @response.body, "Actions"
       assert_includes @response.body, "Open traces"
       assert_includes @response.body, "Compare deploy"
@@ -103,6 +104,11 @@ module SolidEvents
       assert_response :success
       assert_includes @response.body, "Hot Path Drilldown"
       assert_includes @response.body, "Hourly Buckets"
+
+      get "/solid_events/timeline", params: {request_id: "req-123", window: "24h"}
+      assert_response :success
+      assert_includes @response.body, "Timeline View"
+      assert_includes @response.body, "OrdersController#create"
     end
 
     test "index compare panel supports custom windows and metrics" do

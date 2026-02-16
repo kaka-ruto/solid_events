@@ -108,6 +108,44 @@ module SolidEvents
       end
     end
 
+    def timeline
+      @request_id = params[:request_id].to_s.strip
+      @entity_type = params[:entity_type].to_s.strip
+      @entity_id = params[:entity_id].to_s.strip
+      @window = params[:window].to_s.presence || "24h"
+      @timeline_rows = []
+
+      summaries = SolidEvents::Summary.where(started_at: journey_window_start..Time.current).order(started_at: :asc)
+      if @request_id.present?
+        summaries = summaries.where(request_id: @request_id)
+      elsif @entity_type.present? && @entity_id.present?
+        summaries = summaries.where(entity_type: @entity_type, entity_id: @entity_id.to_i)
+      else
+        summaries = summaries.none
+      end
+
+      traces = SolidEvents::Trace.includes(:events, :summary).where(id: summaries.limit(100).pluck(:trace_id)).order(started_at: :asc)
+      @timeline_rows = traces.flat_map do |trace|
+        base = [{
+          at: trace.started_at,
+          kind: "trace",
+          label: "#{trace.name} (#{trace.status})",
+          trace_id: trace.id,
+          details: trace.source
+        }]
+        events = trace.events.order(:occurred_at).map do |event|
+          {
+            at: event.occurred_at,
+            kind: event.event_type,
+            label: event.name,
+            trace_id: trace.id,
+            details: event.duration_ms ? "#{event.duration_ms} ms" : nil
+          }
+        end
+        base + events
+      end.sort_by { |row| row[:at] || Time.at(0) }
+    end
+
     def show
       @events = @trace.events.order(:occurred_at)
       @record_links = @trace.record_links

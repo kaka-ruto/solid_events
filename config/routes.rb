@@ -2,6 +2,7 @@
 
 SolidEvents::Engine.routes.draw do
   get "hot_path", to: "traces#hot_path"
+  get "timeline", to: "traces#timeline"
   get "api/incidents", to: "api#incidents"
   get "api/incidents/:id/traces", to: "api#incident_traces", as: :api_incident_traces
   get "api/incidents/:id/context", to: "api#incident_context", as: :api_incident_context
