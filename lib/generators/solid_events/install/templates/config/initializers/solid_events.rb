@@ -26,8 +26,34 @@ SolidEvents.configure do |config|
   # Incident detection thresholds.
   # config.incident_error_spike_threshold_pct = 20
   # config.incident_p95_regression_factor = 1.5
+  # config.incident_slo_target_error_rate_pct = 1.0
+  # config.incident_slo_burn_rate_threshold = 2.0
+  # config.incident_multi_signal_error_rate_pct = 10.0
+  # config.incident_multi_signal_p95_factor = 1.4
+  # config.incident_multi_signal_sql_duration_ms = 200.0
   # config.incident_min_samples = 20
   # config.incident_dedupe_window = 1.hour
+  # Example environment-specific tuning:
+  # case Rails.env
+  # when "development"
+  #   config.incident_slo_target_error_rate_pct = 5.0
+  #   config.incident_slo_burn_rate_threshold = 4.0
+  #   config.incident_multi_signal_error_rate_pct = 25.0
+  #   config.incident_multi_signal_p95_factor = 2.0
+  #   config.incident_multi_signal_sql_duration_ms = 500.0
+  # when "staging"
+  #   config.incident_slo_target_error_rate_pct = 2.0
+  #   config.incident_slo_burn_rate_threshold = 3.0
+  #   config.incident_multi_signal_error_rate_pct = 15.0
+  #   config.incident_multi_signal_p95_factor = 1.6
+  #   config.incident_multi_signal_sql_duration_ms = 300.0
+  # when "production"
+  #   config.incident_slo_target_error_rate_pct = 1.0
+  #   config.incident_slo_burn_rate_threshold = 2.0
+  #   config.incident_multi_signal_error_rate_pct = 10.0
+  #   config.incident_multi_signal_p95_factor = 1.4
+  #   config.incident_multi_signal_sql_duration_ms = 200.0
+  # end
   # config.incident_suppression_rules = [
   #   {kind: "new_fingerprint", source: "HealthcheckController#index"},
   #   {kind: "error_spike", name: "metrics.poll", source: /Internal/}

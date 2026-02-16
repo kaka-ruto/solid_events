@@ -234,7 +234,7 @@ The mounted engine includes JSON endpoints for automation/agents:
 - `GET /solid_events/api/incidents/:id/traces`
 - `GET /solid_events/api/incidents/:id/context`
 - `GET /solid_events/api/incidents/:id/events`
- - `GET /solid_events/api/incidents/:id/evidences`
+- `GET /solid_events/api/incidents/:id/evidences`
 - `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
 - `PATCH /solid_events/api/incidents/:id/assign` (`owner`, `team`, `assigned_by`, `assignment_note`)
 - `PATCH /solid_events/api/incidents/:id/mute` (`minutes`)
@@ -272,6 +272,40 @@ Set `config.evaluate_incidents_on_request = false` in production if you only wan
 API contract and versioning details: `docs/api.md`.
 Migration guide: `docs/migration.md`.
 Performance baseline and query plan notes: `docs/performance.md`.
+Incident policy tuning by environment: `docs/incident_policies.md`.
+
+### Incident Policies by Environment
+
+Recommended defaults:
+
+- Development: high thresholds to avoid noisy local incidents.
+- Staging: medium thresholds to catch regressions before deploy.
+- Production: low thresholds to detect customer-facing degradation quickly.
+
+Use this reference config:
+
+```ruby
+case Rails.env
+when "development"
+  config.incident_slo_target_error_rate_pct = 5.0
+  config.incident_slo_burn_rate_threshold = 4.0
+  config.incident_multi_signal_error_rate_pct = 25.0
+  config.incident_multi_signal_p95_factor = 2.0
+  config.incident_multi_signal_sql_duration_ms = 500.0
+when "staging"
+  config.incident_slo_target_error_rate_pct = 2.0
+  config.incident_slo_burn_rate_threshold = 3.0
+  config.incident_multi_signal_error_rate_pct = 15.0
+  config.incident_multi_signal_p95_factor = 1.6
+  config.incident_multi_signal_sql_duration_ms = 300.0
+else
+  config.incident_slo_target_error_rate_pct = 1.0
+  config.incident_slo_burn_rate_threshold = 2.0
+  config.incident_multi_signal_error_rate_pct = 10.0
+  config.incident_multi_signal_p95_factor = 1.4
+  config.incident_multi_signal_sql_duration_ms = 200.0
+end
+```
 
 ### Benchmarking
 
