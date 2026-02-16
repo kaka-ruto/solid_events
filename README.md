@@ -207,6 +207,7 @@ end
 - **SLO Panels:** Throughput + error rate + p95/p99 at a glance for the active filter window.
 - **Hot Path Drilldown:** Hourly p95 and recent failing traces for a selected route/job.
 - **Incidents Feed:** Built-in detection for new fingerprints, error spikes, and p95 regressions.
+- **Incident Lifecycle:** Acknowledge, resolve, and reopen incidents from the dashboard feed.
 - **Deploy-Aware Error Detection:** Highlights fingerprints unique to current deploy/version.
 
 ---

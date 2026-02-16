@@ -31,6 +31,8 @@ module SolidEvents
       incident = SolidEvents::Incident.where(kind: "new_fingerprint", fingerprint: "fp-new").first
       assert_not_nil incident
       assert_equal "warning", incident.severity
+      assert_equal "active", incident.status
+      assert_not_nil incident.last_seen_at
     end
 
     test "creates error spike incident when threshold exceeded" do

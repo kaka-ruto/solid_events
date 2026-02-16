@@ -49,6 +49,7 @@ module SolidEvents
       assert_response :success
       assert_includes @response.body, "Context Graph"
       assert_includes @response.body, "Incidents Feed"
+      assert_includes @response.body, "Actions"
       assert_includes @response.body, "Throughput"
       assert_includes @response.body, "Hot Paths"
       assert_includes @response.body, "Regression Candidates"

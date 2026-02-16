@@ -388,7 +388,7 @@ module SolidEvents
 
     def load_incidents
       @incidents = if incident_table_available?
-        SolidEvents::Incident.recent.limit(25)
+        SolidEvents::Incident.active_first.limit(25)
       else
         []
       end

@@ -107,26 +107,42 @@
       <thead>
         <tr>
           <th>Detected</th>
+          <th>Status</th>
           <th>Severity</th>
           <th>Kind</th>
           <th>Name</th>
           <th>Source</th>
+          <th>Last Seen</th>
           <th>Details</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <% @incidents.each do |incident| %>
           <tr>
             <td title="<%= absolute_time(incident.detected_at) %>"><%= relative_time(incident.detected_at) %></td>
+            <td><span class="badge <%= incident.status == "active" ? "error" : "muted" %>"><%= incident.status %></span></td>
             <td><span class="badge <%= incident.severity == "critical" ? "error" : "muted" %>"><%= incident.severity %></span></td>
             <td><%= incident.kind %></td>
             <td><%= incident.name %></td>
             <td><%= incident.source %></td>
+            <td title="<%= absolute_time(incident.last_seen_at) %>"><%= relative_time(incident.last_seen_at) %></td>
             <td><%= incident.payload.to_h.to_json %></td>
+            <td>
+              <% if incident.status == "active" %>
+                <%= button_to "Ack", acknowledge_incident_path(incident), method: :patch, class: "button button-muted" %>
+                <%= button_to "Resolve", resolve_incident_path(incident), method: :patch, class: "button button-muted" %>
+              <% elsif incident.status == "acknowledged" %>
+                <%= button_to "Resolve", resolve_incident_path(incident), method: :patch, class: "button button-muted" %>
+                <%= button_to "Reopen", reopen_incident_path(incident), method: :patch, class: "button button-muted" %>
+              <% else %>
+                <%= button_to "Reopen", reopen_incident_path(incident), method: :patch, class: "button button-muted" %>
+              <% end %>
+            </td>
           </tr>
         <% end %>
         <% if @incidents.empty? %>
-          <tr><td colspan="6" class="muted">No incidents detected.</td></tr>
+          <tr><td colspan="9" class="muted">No incidents detected.</td></tr>
         <% end %>
       </tbody>
     </table>

@@ -121,18 +121,30 @@ module SolidEvents
         ).where("detected_at >= ?", 1.hour.ago).order(detected_at: :desc).first
 
         if existing
-          existing.update!(payload: payload, detected_at: Time.current, severity: severity)
+          attrs = {
+            payload: payload,
+            detected_at: Time.current,
+            last_seen_at: Time.current,
+            severity: severity
+          }
+          if existing.status == "resolved"
+            attrs[:status] = "active"
+            attrs[:resolved_at] = nil
+          end
+          existing.update!(attrs)
           return existing
         end
 
         SolidEvents::Incident.create!(
           kind: kind,
           severity: severity,
+          status: "active",
           source: source,
           name: name,
           fingerprint: fingerprint,
           payload: payload,
-          detected_at: Time.current
+          detected_at: Time.current,
+          last_seen_at: Time.current
         )
       end
     end
