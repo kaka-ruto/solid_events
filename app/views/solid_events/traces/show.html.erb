@@ -44,6 +44,25 @@
 <% end %>
 
 <div class="card">
+  <h3>Correlation Pivots (7d)</h3>
+  <p>
+    Same Entity Traces: <strong><%= @correlation[:entity_trace_count] %></strong> |
+    Same Entity Errors: <strong><%= @correlation[:entity_error_count] %></strong> |
+    Same Fingerprint Traces: <strong><%= @correlation[:fingerprint_trace_count] %></strong> |
+    Same Fingerprint Errors: <strong><%= @correlation[:fingerprint_error_count] %></strong>
+  </p>
+  <p class="muted">
+    Duration Trend (24h vs prior 7d): <%= @correlation[:recent_avg_duration_ms] || "n/a" %> ms vs <%= @correlation[:baseline_avg_duration_ms] || "n/a" %> ms
+    (<%= duration_delta_label(@correlation[:recent_avg_duration_ms], @correlation[:baseline_avg_duration_ms]) %>)
+    <% if @correlation[:duration_regression] %>
+      <span class="badge error">regression</span>
+    <% else %>
+      <span class="badge ok">stable</span>
+    <% end %>
+  </p>
+</div>
+
+<div class="card">
   <h3>Context</h3>
   <% if @trace.context.present? %>
     <pre><%= JSON.pretty_generate(@trace.context) %></pre>

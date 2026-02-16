@@ -56,5 +56,13 @@ module SolidEvents
     def trace_error_link_count(trace)
       trace.summary&.error_count || trace.error_links.size
     end
+
+    def duration_delta_label(recent_ms, baseline_ms)
+      return "n/a" unless recent_ms && baseline_ms
+
+      delta = (recent_ms - baseline_ms).round(2)
+      sign = delta.positive? ? "+" : ""
+      "#{sign}#{delta} ms"
+    end
   end
 end

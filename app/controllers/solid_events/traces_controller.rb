@@ -57,6 +57,7 @@ module SolidEvents
       @record_links = @trace.record_links
       @error_links = @trace.error_links
       @event_counts = @events.reorder(nil).group(:event_type).count
+      load_correlation_pivots
     end
 
     private
@@ -127,6 +128,46 @@ module SolidEvents
       @summary_table_available ||= SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
     rescue StandardError
       false
+    end
+
+    def load_correlation_pivots
+      @correlation = {
+        entity_trace_count: 0,
+        entity_error_count: 0,
+        fingerprint_trace_count: 0,
+        fingerprint_error_count: 0,
+        recent_avg_duration_ms: nil,
+        baseline_avg_duration_ms: nil,
+        duration_regression: false
+      }
+      return unless summary_table_available?
+
+      summaries = SolidEvents::Summary.where(started_at: 7.days.ago..Time.current)
+
+      if @trace.summary&.entity_type.present? && @trace.summary&.entity_id.present?
+        entity_scope = summaries.where(entity_type: @trace.summary.entity_type, entity_id: @trace.summary.entity_id)
+        @correlation[:entity_trace_count] = entity_scope.count
+        @correlation[:entity_error_count] = entity_scope.where(status: "error").count
+      end
+
+      if @trace.summary&.error_fingerprint.present?
+        fingerprint_scope = summaries.where(error_fingerprint: @trace.summary.error_fingerprint)
+        @correlation[:fingerprint_trace_count] = fingerprint_scope.count
+        @correlation[:fingerprint_error_count] = fingerprint_scope.where(status: "error").count
+      end
+
+      source_scope = SolidEvents::Summary.where(source: @trace.source, name: @trace.name)
+      recent_scope = source_scope.where(started_at: 24.hours.ago..Time.current).where.not(duration_ms: nil)
+      baseline_scope = source_scope.where(started_at: 7.days.ago...24.hours.ago).where.not(duration_ms: nil)
+
+      @correlation[:recent_avg_duration_ms] = recent_scope.average(:duration_ms)&.to_f&.round(2)
+      @correlation[:baseline_avg_duration_ms] = baseline_scope.average(:duration_ms)&.to_f&.round(2)
+
+      if @correlation[:recent_avg_duration_ms] && @correlation[:baseline_avg_duration_ms]
+        @correlation[:duration_regression] =
+          @correlation[:recent_avg_duration_ms] > (@correlation[:baseline_avg_duration_ms] * 1.5) &&
+          (@correlation[:recent_avg_duration_ms] - @correlation[:baseline_avg_duration_ms]) >= 50
+      end
     end
   end
 end

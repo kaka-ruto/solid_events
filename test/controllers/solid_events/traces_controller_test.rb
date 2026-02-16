@@ -34,6 +34,7 @@ module SolidEvents
       assert_includes @response.body, "Trace ##{trace.id}"
       assert_includes @response.body, "Canonical Event"
       assert_includes @response.body, "Summary Dimensions"
+      assert_includes @response.body, "Correlation Pivots"
       assert_includes @response.body, "/solid_errors/123"
     end
   end

@@ -153,6 +153,7 @@ end
 - **Trace Waterfall:** Visualize the sequence: `Controller` -> `Model` -> `SQL` -> `Job`.
 - **Entity Search:** Search for "Order 123" to see every trace that ever touched that order.
 - **Dimension Filters:** Filter by entity type/id, context key/value, status, source, and minimum duration.
+- **Correlation Pivots:** On each trace page, see related entity/error clusters and a simple duration regression signal.
 
 ---
 
