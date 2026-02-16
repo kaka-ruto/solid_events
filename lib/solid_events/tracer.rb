@@ -25,6 +25,7 @@ module SolidEvents
       )
       SolidEvents::Current.trace = trace
       SolidEvents::Current.trace_metrics = default_trace_metrics
+      create_causal_edge_for_trace!(trace)
       trace
     end
 
@@ -124,6 +125,33 @@ module SolidEvents
 
       trace.record_links.find_or_create_by!(record_type: record.class.name, record_id: record.id)
       upsert_summary!(trace)
+    end
+
+    def record_state_diff!(record:, action:, before_state:, after_state:)
+      return unless storage_available?
+
+      trace = current_trace
+      return unless trace
+      return if ignored_record_for_linking?(record)
+
+      filtered_before, filtered_after, changed_fields = filtered_state_diff(
+        before_state: before_state,
+        after_state: after_state
+      )
+      return if changed_fields.empty?
+
+      record_event!(
+        event_type: "state_diff",
+        name: "#{record.class.name}##{action}",
+        payload: {
+          record_type: record.class.name,
+          record_id: record.id,
+          action: action,
+          changed_fields: changed_fields,
+          before: filtered_before,
+          after: filtered_after
+        }
+      )
     end
 
     def link_error!(solid_error_id)
@@ -351,6 +379,7 @@ module SolidEvents
         }
       )
       summary.save!
+      materialize_journey!(summary)
       summary
     rescue StandardError
       nil
@@ -412,6 +441,34 @@ module SolidEvents
       {type: link.record_type, id: link.record_id}
     rescue StandardError
       {type: nil, id: nil}
+    end
+
+    def materialize_journey!(summary)
+      return unless defined?(SolidEvents::Journey)
+      return unless SolidEvents::Journey.connection.data_source_exists?(SolidEvents::Journey.table_name)
+
+      SolidEvents::Journey.materialize_from_summary!(summary)
+    rescue StandardError
+      nil
+    end
+
+    def create_causal_edge_for_trace!(trace)
+      return unless trace.caused_by_trace_id.present? || trace.caused_by_event_id.present?
+      return unless defined?(SolidEvents::CausalEdge)
+      return unless SolidEvents::CausalEdge.connection.data_source_exists?(SolidEvents::CausalEdge.table_name)
+
+      SolidEvents::CausalEdge.find_or_create_by!(
+        from_trace_id: trace.caused_by_trace_id,
+        from_event_id: trace.caused_by_event_id,
+        to_trace_id: trace.id,
+        edge_type: "caused_by"
+      ) do |edge|
+        edge.to_event_id = nil
+        edge.occurred_at = trace.started_at || Time.current
+        edge.payload = {trace_type: trace.trace_type}
+      end
+    rescue StandardError
+      nil
     end
 
     def error_candidates_from(exception:, trace:)
@@ -488,6 +545,26 @@ module SolidEvents
 
     def root_cause(exception)
       exception_chain(exception).last || exception
+    end
+
+    def ignored_record_for_linking?(record)
+      return true if record.is_a?(SolidEvents::Record)
+      return true if SolidEvents.ignore_models.include?(record.class.name)
+      return true if SolidEvents.ignore_model_prefixes.any? { |prefix| record.class.name.start_with?(prefix.to_s) }
+
+      false
+    end
+
+    def filtered_state_diff(before_state:, after_state:)
+      before_hash = normalize_context(before_state)
+      after_hash = normalize_context(after_state)
+      ignored_keys = %w[created_at updated_at]
+      changed_fields = (before_hash.keys | after_hash.keys).reject { |key| ignored_keys.include?(key) }.select do |key|
+        before_hash[key] != after_hash[key]
+      end
+      filtered_before = before_hash.slice(*changed_fields)
+      filtered_after = after_hash.slice(*changed_fields)
+      [filtered_before, filtered_after, changed_fields]
     end
 
     def default_trace_metrics

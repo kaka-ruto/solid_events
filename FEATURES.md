@@ -29,8 +29,8 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Capture SQL spans from `sql.active_record` with duration
 - [x] Track trace lifecycle (`started_at`, `finished_at`, `status`)
 - [x] Capture contextual metadata (`path`, method, status, request_id, queue)
-- [ ] Capture Action Cable / mailer / external HTTP spans as first-class events
-- [ ] Capture explicit causal links across async boundaries (request -> job chain)
+- [x] Capture Action Cable / mailer / external HTTP spans as first-class events
+- [x] Capture explicit causal links across async boundaries (request -> job chain)
 
 ## 2) Canonical wide-event model
 
@@ -39,7 +39,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Include deploy/service dimensions (`service`, `env`, `version`, `deployment`, `region`)
 - [x] Include schema version for stable consumer parsing
 - [x] Support wide-event primary mode (optional sub-event suppression)
-- [ ] Materialize higher-level “story segments” (journey/session aggregates) as first-class records
+- [x] Materialize higher-level “story segments” (journey/session aggregates) as first-class records
 
 ## 3) Correlation and explainability
 
@@ -47,8 +47,8 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Link traces to `solid_errors` records via fingerprint + matching heuristics
 - [x] Preserve error fingerprint on traces/summaries for grouping
 - [x] Provide related-trace pivots by entity and fingerprint in UI
-- [ ] Persist per-step causal graph edges (event A caused event B) beyond trace-local ordering
-- [ ] Persist before/after business state diffs for key domain entities
+- [x] Persist per-step causal graph edges (event A caused event B) beyond trace-local ordering
+- [x] Persist before/after business state diffs for key domain entities
 
 ## 4) Queryability for operator questions
 
@@ -129,6 +129,6 @@ Important: these are outcome examples, not a requirement to build natural-langua
 
 To align with the “Rails can already answer these questions” goal, the next major gap is:
 
-1. Better evidence modeling (causal links, state transitions) so external tools/people can answer questions reliably
-2. Multi-signal incident policy support (error + latency + saturation)
-3. Migration/performance guidance for production rollouts at scale
+1. Expose materialized journey and causal-edge records through dedicated APIs for bulk consumers
+2. Add higher-fidelity business state transition controls for selected entity classes
+3. Extend migration/performance guidance for production rollouts at scale

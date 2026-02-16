@@ -62,11 +62,31 @@ module SolidEvents
 
         module ::SolidEventsRecordLinking
           def _create_record(*args, &block)
-            super.tap { SolidEvents::Tracer.link_record!(self) }
+            super.tap do
+              SolidEvents::Tracer.link_record!(self)
+              SolidEvents::Tracer.record_state_diff!(
+                record: self,
+                action: "create",
+                before_state: {},
+                after_state: attributes
+              )
+            end
           end
 
           def _update_record(*args, &block)
-            super.tap { |ok| SolidEvents::Tracer.link_record!(self) if ok }
+            before_state = respond_to?(:changes_to_save) ? changes_to_save.transform_values(&:first) : {}
+            super.tap do |ok|
+              next unless ok
+
+              SolidEvents::Tracer.link_record!(self)
+              after_state = respond_to?(:saved_changes) ? saved_changes.transform_values(&:last) : {}
+              SolidEvents::Tracer.record_state_diff!(
+                record: self,
+                action: "update",
+                before_state: before_state,
+                after_state: after_state
+              )
+            end
           end
         end
 

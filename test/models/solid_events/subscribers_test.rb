@@ -132,6 +132,9 @@ module SolidEvents
       assert_not_nil child_trace.caused_by_event_id
       assert_equal parent_trace.id, child_trace.summary.caused_by_trace_id
       assert_equal child_trace.caused_by_event_id, child_trace.summary.caused_by_event_id
+      edge = SolidEvents::CausalEdge.find_by(from_trace_id: parent_trace.id, to_trace_id: child_trace.id)
+      assert_not_nil edge
+      assert_equal "caused_by", edge.edge_type
     end
 
     test "error subscriber links current trace using fingerprint" do

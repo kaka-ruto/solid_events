@@ -24,6 +24,14 @@ class ::TestLogger
   end
 end
 
+class ::SolidEventsTestWidget
+  attr_reader :id
+
+  def initialize(id)
+    @id = id
+  end
+end
+
 unless defined?(::SolidErrors)
   module ::SolidErrors
   end
@@ -168,6 +176,51 @@ module SolidEvents
       assert_equal 34, trace.summary.caused_by_event_id
       assert_equal 12, trace.canonical_event[:caused_by_trace_id]
       assert_equal 34, trace.canonical_event[:caused_by_event_id]
+      assert_equal 1, SolidEvents::CausalEdge.where(to_trace_id: trace.id).count
+    end
+
+    test "materializes journeys as first class records from summaries" do
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        context: {request_id: "req-journey-1"}
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      journey = SolidEvents::Journey.find_by(journey_key: "request:req-journey-1")
+      assert_not_nil journey
+      assert_equal "req-journey-1", journey.request_id
+      assert_equal trace.id, journey.last_trace_id
+      assert_equal 1, journey.trace_count
+      assert_equal 0, journey.error_count
+    end
+
+    test "persists state diffs for record create and update" do
+      SolidEvents::Tracer.start_trace!(name: "widgets.update", trace_type: "request", source: "WidgetsController#update")
+      widget = SolidEventsTestWidget.new(77)
+      SolidEvents::Tracer.record_state_diff!(
+        record: widget,
+        action: "create",
+        before_state: {},
+        after_state: {"name" => "draft", "status" => "new"}
+      )
+      SolidEvents::Tracer.record_state_diff!(
+        record: widget,
+        action: "update",
+        before_state: {"status" => "new"},
+        after_state: {"status" => "active"}
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      trace = SolidEvents::Trace.last
+      diffs = trace.events.where(event_type: "state_diff").order(:id)
+      assert_operator diffs.count, :>=, 2
+      assert_equal "SolidEventsTestWidget#create", diffs.first.name
+      assert_equal "SolidEventsTestWidget#update", diffs.last.name
+      assert_includes diffs.last.payload["changed_fields"], "status"
+      assert_equal "new", diffs.last.payload.dig("before", "status")
+      assert_equal "active", diffs.last.payload.dig("after", "status")
     end
 
     test "reconciles error link from trace exception context" do
