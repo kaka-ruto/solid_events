@@ -6,6 +6,8 @@ ActiveRecord::Schema[7.1].define do
     t.string :trace_type, null: false
     t.string :source, null: false
     t.string :status, null: false, default: "ok"
+    t.bigint :caused_by_trace_id
+    t.bigint :caused_by_event_id
     t.json :context, default: {}
     t.datetime :started_at, null: false
     t.datetime :finished_at
@@ -15,6 +17,8 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_traces, :started_at
   add_index :solid_events_traces, :trace_type
   add_index :solid_events_traces, :status
+  add_index :solid_events_traces, :caused_by_trace_id
+  add_index :solid_events_traces, :caused_by_event_id
 
   create_table :solid_events_events, force: :cascade do |t|
     t.references :trace, null: false, foreign_key: {to_table: :solid_events_traces}
@@ -46,4 +50,121 @@ ActiveRecord::Schema[7.1].define do
   end
 
   add_index :solid_events_error_links, [:trace_id, :solid_error_id], unique: true
+
+  create_table :solid_events_summaries, force: :cascade do |t|
+    t.references :trace, null: false, index: {unique: true}, foreign_key: {to_table: :solid_events_traces}
+    t.string :name, null: false
+    t.string :trace_type, null: false
+    t.string :source, null: false
+    t.string :status, null: false, default: "ok"
+    t.bigint :caused_by_trace_id
+    t.bigint :caused_by_event_id
+    t.string :outcome
+    t.string :entity_type
+    t.bigint :entity_id
+    t.integer :http_status
+    t.string :request_method
+    t.string :request_id
+    t.string :path
+    t.string :job_class
+    t.string :queue_name
+    t.string :schema_version, null: false, default: "1"
+    t.string :service_name
+    t.string :environment_name
+    t.string :service_version
+    t.string :deployment_id
+    t.string :region
+    t.datetime :started_at, null: false
+    t.datetime :finished_at
+    t.float :duration_ms
+    t.integer :event_count, null: false, default: 0
+    t.integer :sql_count, null: false, default: 0
+    t.float :sql_duration_ms, null: false, default: 0.0
+    t.integer :record_link_count, null: false, default: 0
+    t.integer :error_count, null: false, default: 0
+    t.bigint :user_id
+    t.bigint :account_id
+    t.string :error_fingerprint
+    t.json :payload, default: {}
+    t.timestamps
+  end
+
+  add_index :solid_events_summaries, :status
+  add_index :solid_events_summaries, :started_at
+  add_index :solid_events_summaries, :duration_ms
+  add_index :solid_events_summaries, :caused_by_trace_id
+  add_index :solid_events_summaries, :caused_by_event_id
+  add_index :solid_events_summaries, :user_id
+  add_index :solid_events_summaries, :account_id
+  add_index :solid_events_summaries, :error_fingerprint
+  add_index :solid_events_summaries, :entity_type
+  add_index :solid_events_summaries, :entity_id
+  add_index :solid_events_summaries, :http_status
+  add_index :solid_events_summaries, :request_method
+  add_index :solid_events_summaries, :request_id
+  add_index :solid_events_summaries, :queue_name
+  add_index :solid_events_summaries, :service_name
+  add_index :solid_events_summaries, :environment_name
+  add_index :solid_events_summaries, :service_version
+  add_index :solid_events_summaries, :deployment_id
+  add_index :solid_events_summaries, :region
+
+  create_table :solid_events_incidents, force: :cascade do |t|
+    t.string :kind, null: false
+    t.string :severity, null: false, default: "warning"
+    t.string :status, null: false, default: "active"
+    t.string :owner
+    t.string :team
+    t.string :assigned_by
+    t.text :assignment_note
+    t.datetime :assigned_at
+    t.string :resolved_by
+    t.text :resolution_note
+    t.string :source
+    t.string :name
+    t.string :fingerprint
+    t.json :payload, default: {}
+    t.datetime :detected_at, null: false
+    t.datetime :last_seen_at, null: false
+    t.datetime :acknowledged_at
+    t.datetime :resolved_at
+    t.datetime :muted_until
+    t.timestamps
+  end
+
+  add_index :solid_events_incidents, :kind
+  add_index :solid_events_incidents, :severity
+  add_index :solid_events_incidents, :status
+  add_index :solid_events_incidents, :owner
+  add_index :solid_events_incidents, :team
+  add_index :solid_events_incidents, :assigned_by
+  add_index :solid_events_incidents, :assigned_at
+  add_index :solid_events_incidents, :source
+  add_index :solid_events_incidents, :name
+  add_index :solid_events_incidents, :fingerprint
+  add_index :solid_events_incidents, :detected_at
+
+  create_table :solid_events_incident_events, force: :cascade do |t|
+    t.references :incident, null: false, foreign_key: {to_table: :solid_events_incidents}
+    t.string :action, null: false
+    t.string :actor
+    t.json :payload, default: {}
+    t.datetime :occurred_at, null: false
+    t.timestamps
+  end
+
+  add_index :solid_events_incident_events, :action
+  add_index :solid_events_incident_events, :occurred_at
+  add_index :solid_events_incident_events, [:incident_id, :occurred_at], name: "index_solid_events_incident_events_on_incident_and_time"
+  add_index :solid_events_incident_events, [:incident_id, :action, :occurred_at], name: "index_solid_events_incident_events_on_incident_action_time"
+
+  create_table :solid_events_saved_views, force: :cascade do |t|
+    t.string :name, null: false
+    t.json :filters, default: {}
+    t.string :created_by
+    t.timestamps
+  end
+
+  add_index :solid_events_saved_views, :name
+  add_index :solid_events_saved_views, :created_at
 end

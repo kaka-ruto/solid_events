@@ -186,6 +186,53 @@ module SolidEvents
       assert_includes @response.body, "incident reopened: error_spike"
     end
 
+    test "timeline includes causal link fields in trace explain blocks" do
+      parent = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "ok",
+        started_at: 2.minutes.ago
+      )
+      parent.create_summary!(
+        name: parent.name,
+        trace_type: parent.trace_type,
+        source: parent.source,
+        status: parent.status,
+        request_id: "req-causal-1",
+        started_at: parent.started_at,
+        finished_at: parent.started_at + 10.seconds
+      )
+
+      child = SolidEvents::Trace.create!(
+        name: "job.checkout_job",
+        trace_type: "job",
+        source: "CheckoutJob",
+        status: "ok",
+        caused_by_trace_id: parent.id,
+        caused_by_event_id: 321,
+        started_at: 1.minute.ago
+      )
+      child.create_summary!(
+        name: child.name,
+        trace_type: child.trace_type,
+        source: child.source,
+        status: child.status,
+        request_id: "req-causal-1",
+        caused_by_trace_id: parent.id,
+        caused_by_event_id: 321,
+        started_at: child.started_at,
+        finished_at: child.started_at + 5.seconds
+      )
+
+      get "/solid_events/timeline", params: {request_id: "req-causal-1", window: "24h"}
+      assert_response :success
+      assert_includes @response.body, "caused_by_trace_id"
+      assert_includes @response.body, parent.id.to_s
+      assert_includes @response.body, "caused_by_event_id"
+      assert_includes @response.body, "321"
+    end
+
     test "index compare panel supports custom windows and metrics" do
       now_trace = SolidEvents::Trace.create!(
         name: "checkout.create",

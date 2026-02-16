@@ -134,11 +134,17 @@ module SolidEvents
           kind: "trace",
           label: "#{trace.name} (#{trace.status})",
           trace_id: trace.id,
-          details: trace.source,
+          details: [
+            trace.source,
+            ("caused_by_trace_id=#{trace.caused_by_trace_id}" if trace.caused_by_trace_id.present?),
+            ("caused_by_event_id=#{trace.caused_by_event_id}" if trace.caused_by_event_id.present?)
+          ].compact.join(" | "),
           explain: {
             trace_id: trace.id,
             source: trace.source,
-            status: trace.status
+            status: trace.status,
+            caused_by_trace_id: trace.caused_by_trace_id,
+            caused_by_event_id: trace.caused_by_event_id
           }
         }]
         events = trace.events.order(:occurred_at).map do |event|

@@ -6,6 +6,8 @@ ActiveRecord::Schema[7.1].define do
     t.string :trace_type, null: false
     t.string :source, null: false
     t.string :status, null: false, default: "ok"
+    t.bigint :caused_by_trace_id
+    t.bigint :caused_by_event_id
     t.json :context, default: {}
     t.datetime :started_at, null: false
     t.datetime :finished_at
@@ -15,6 +17,8 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_traces, :started_at
   add_index :solid_events_traces, :trace_type
   add_index :solid_events_traces, :status
+  add_index :solid_events_traces, :caused_by_trace_id
+  add_index :solid_events_traces, :caused_by_event_id
 
   create_table :solid_events_events, force: :cascade do |t|
     t.references :trace, null: false, foreign_key: {to_table: :solid_events_traces}
@@ -53,6 +57,8 @@ ActiveRecord::Schema[7.1].define do
     t.string :trace_type, null: false
     t.string :source, null: false
     t.string :status, null: false, default: "ok"
+    t.bigint :caused_by_trace_id
+    t.bigint :caused_by_event_id
     t.string :outcome
     t.string :entity_type
     t.bigint :entity_id
@@ -86,6 +92,8 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_summaries, :status
   add_index :solid_events_summaries, :started_at
   add_index :solid_events_summaries, :duration_ms
+  add_index :solid_events_summaries, :caused_by_trace_id
+  add_index :solid_events_summaries, :caused_by_event_id
   add_index :solid_events_summaries, :user_id
   add_index :solid_events_summaries, :account_id
   add_index :solid_events_summaries, :error_fingerprint

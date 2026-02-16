@@ -30,6 +30,14 @@ module SolidEvents
     end
   end
 
+  class CheckoutJob
+    def self.name = "CheckoutJob"
+
+    def job_id = "job-causal-1"
+
+    def queue_name = "default"
+  end
+
   class SubscribersTest < ActiveSupport::TestCase
     test "sql subscriber appends event to active trace" do
       SolidEvents::Tracer.start_trace!(name: "test", trace_type: "request", source: "x")
@@ -104,6 +112,26 @@ module SolidEvents
 
       trace = SolidEvents::Trace.last
       assert_equal 1, trace.events.where(event_type: "external_http").count
+    end
+
+    test "enqueue and job subscribers preserve causal links across request to job chain" do
+      enqueue_subscriber = SolidEvents::Subscribers::EnqueueSubscriber.new
+      job_subscriber = SolidEvents::Subscribers::JobSubscriber.new
+
+      parent_trace = SolidEvents::Tracer.start_trace!(name: "checkout.create", trace_type: "request", source: "CheckoutController#create")
+      enqueue_payload = {job: CheckoutJob.new}
+      enqueue_subscriber.call("enqueue.active_job", Time.current, Time.current + 0.001, "1", enqueue_payload)
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      job_payload = {job: CheckoutJob.new}
+      job_subscriber.call("perform.active_job", Time.current, Time.current + 0.005, "1", job_payload)
+
+      child_trace = SolidEvents::Trace.order(:id).last
+      assert_equal "job", child_trace.trace_type
+      assert_equal parent_trace.id, child_trace.caused_by_trace_id
+      assert_not_nil child_trace.caused_by_event_id
+      assert_equal parent_trace.id, child_trace.summary.caused_by_trace_id
+      assert_equal child_trace.caused_by_event_id, child_trace.summary.caused_by_event_id
     end
 
     test "error subscriber links current trace using fingerprint" do

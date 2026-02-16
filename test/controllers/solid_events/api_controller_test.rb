@@ -30,6 +30,8 @@ module SolidEvents
         trace_type: "request",
         source: "OrdersController#create",
         status: "error",
+        caused_by_trace_id: 10,
+        caused_by_event_id: 22,
         context: {"request_id" => "req-api"},
         started_at: Time.current
       )
@@ -39,6 +41,8 @@ module SolidEvents
       assert_response :success
       payload = JSON.parse(@response.body)
       assert_equal trace.id, payload["trace"]["trace_id"]
+      assert_equal 10, payload["trace"]["caused_by_trace_id"]
+      assert_equal 22, payload["trace"]["caused_by_event_id"]
       assert_equal 22, payload["error_links"].first["solid_error_id"]
     end
 

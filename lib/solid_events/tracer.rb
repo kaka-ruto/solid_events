@@ -7,7 +7,7 @@ module SolidEvents
   module Tracer
     module_function
 
-    def start_trace!(name:, trace_type:, source:, context: {})
+    def start_trace!(name:, trace_type:, source:, context: {}, caused_by_trace_id: nil, caused_by_event_id: nil)
       return unless storage_available?
       context_payload = guarded_payload(
         redact_hash(normalize_context(context)),
@@ -18,6 +18,8 @@ module SolidEvents
         name: name,
         trace_type: trace_type,
         source: source,
+        caused_by_trace_id: caused_by_trace_id,
+        caused_by_event_id: caused_by_event_id,
         context: context_payload,
         started_at: Time.current
       )
@@ -76,12 +78,13 @@ module SolidEvents
       end
       SolidEvents::Current.trace_metrics = metrics
 
+      created_event = nil
       if !SolidEvents.wide_event_primary? || SolidEvents.persist_sub_events?
         payload_for_event = guarded_payload(
           redact_hash(normalize_context(payload)),
           max_bytes: SolidEvents.max_event_payload_bytes
         )
-        trace.events.create!(
+        created_event = trace.events.create!(
           event_type: event_type,
           name: name,
           payload: payload_for_event,
@@ -90,6 +93,7 @@ module SolidEvents
         )
       end
       upsert_summary!(trace)
+      created_event
     end
 
     def annotate!(context = {})
@@ -151,6 +155,42 @@ module SolidEvents
       return unless trace_id
 
       SolidEvents::Trace.find_by(id: trace_id)
+    end
+
+    def register_async_causal_link!(job_id:, caused_by_trace_id:, caused_by_event_id:)
+      return if job_id.blank? || caused_by_trace_id.blank?
+
+      payload = {
+        "trace_id" => caused_by_trace_id.to_i,
+        "event_id" => caused_by_event_id&.to_i,
+        "recorded_at" => Time.current.to_i
+      }
+      if defined?(Rails) && Rails.cache
+        Rails.cache.write(async_causal_key(job_id), payload, expires_in: 6.hours)
+      else
+        @async_causal_memory ||= {}
+        @async_causal_memory[job_id.to_s] = payload
+      end
+      payload
+    rescue StandardError
+      nil
+    end
+
+    def consume_async_causal_link(job_id:)
+      return {} if job_id.blank?
+
+      value = if defined?(Rails) && Rails.cache
+        key = async_causal_key(job_id)
+        payload = Rails.cache.read(key)
+        Rails.cache.delete(key)
+        payload
+      else
+        @async_causal_memory ||= {}
+        @async_causal_memory.delete(job_id.to_s)
+      end
+      value.to_h.symbolize_keys
+    rescue StandardError
+      {}
     end
 
     def reconcile_error_link_for_trace!(trace, attempts: 6, exception: nil)
@@ -275,6 +315,8 @@ module SolidEvents
         trace_type: trace.trace_type,
         source: trace.source,
         status: trace.status,
+        caused_by_trace_id: trace.caused_by_trace_id,
+        caused_by_event_id: trace.caused_by_event_id,
         outcome: trace.status == "error" ? "failure" : "success",
         entity_type: entity[:type],
         entity_id: entity[:id],
@@ -520,6 +562,10 @@ module SolidEvents
       }
     rescue StandardError
       value
+    end
+
+    def async_causal_key(job_id)
+      "solid_events:causal:job:#{job_id}"
     end
 
     def sensitive_key?(key)

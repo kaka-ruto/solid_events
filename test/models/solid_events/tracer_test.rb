@@ -151,6 +151,25 @@ module SolidEvents
       assert_equal 0, trace.reload.record_links.count
     end
 
+    test "persists caused by links on traces and canonical events" do
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "job.checkout_job",
+        trace_type: "job",
+        source: "CheckoutJob",
+        caused_by_trace_id: 12,
+        caused_by_event_id: 34
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      trace.reload
+      assert_equal 12, trace.caused_by_trace_id
+      assert_equal 34, trace.caused_by_event_id
+      assert_equal 12, trace.summary.caused_by_trace_id
+      assert_equal 34, trace.summary.caused_by_event_id
+      assert_equal 12, trace.canonical_event[:caused_by_trace_id]
+      assert_equal 34, trace.canonical_event[:caused_by_event_id]
+    end
+
     test "reconciles error link from trace exception context" do
       trace = SolidEvents::Tracer.start_trace!(name: "failing.request", trace_type: "request", source: "x")
       SolidEvents::Tracer.finish_trace!(
