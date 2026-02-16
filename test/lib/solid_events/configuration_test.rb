@@ -82,6 +82,9 @@ module SolidEvents
       assert_includes configuration.feature_slice_keys, "feature_flag"
       assert_includes configuration.feature_slice_keys, "experiment"
       assert_includes configuration.feature_slice_keys, "release_channel"
+      assert_equal [], configuration.state_diff_allowlist
+      assert_equal [], configuration.state_diff_blocklist
+      assert_equal 20, configuration.state_diff_max_changed_fields
       if ENV["SOLID_EVENTS_API_TOKEN"].nil?
         assert_nil configuration.api_token
       else

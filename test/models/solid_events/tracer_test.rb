@@ -223,6 +223,61 @@ module SolidEvents
       assert_equal "active", diffs.last.payload.dig("after", "status")
     end
 
+    test "state diff allowlist and blocklist control tracked entity classes" do
+      previous_allowlist = SolidEvents.configuration.state_diff_allowlist
+      previous_blocklist = SolidEvents.configuration.state_diff_blocklist
+      SolidEvents.configuration.state_diff_allowlist = ["LinkedOrderRecord"]
+      SolidEvents.configuration.state_diff_blocklist = []
+
+      SolidEvents::Tracer.start_trace!(name: "orders.update", trace_type: "request", source: "OrdersController#update")
+      allowed = LinkedOrderRecord.new(99)
+      blocked = SolidEventsTestWidget.new(55)
+
+      SolidEvents::Tracer.record_state_diff!(
+        record: allowed,
+        action: "update",
+        before_state: {"status" => "new"},
+        after_state: {"status" => "paid"}
+      )
+      SolidEvents::Tracer.record_state_diff!(
+        record: blocked,
+        action: "update",
+        before_state: {"status" => "new"},
+        after_state: {"status" => "paid"}
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      trace = SolidEvents::Trace.last
+      diff_names = trace.events.where(event_type: "state_diff").pluck(:name)
+      assert_includes diff_names, "LinkedOrderRecord#update"
+      refute_includes diff_names, "SolidEventsTestWidget#update"
+    ensure
+      SolidEvents.configuration.state_diff_allowlist = previous_allowlist
+      SolidEvents.configuration.state_diff_blocklist = previous_blocklist
+    end
+
+    test "state diff max changed fields limits payload size" do
+      previous_max = SolidEvents.configuration.state_diff_max_changed_fields
+      SolidEvents.configuration.state_diff_max_changed_fields = 1
+
+      SolidEvents::Tracer.start_trace!(name: "widgets.cap", trace_type: "request", source: "WidgetsController#update")
+      widget = SolidEventsTestWidget.new(44)
+      SolidEvents::Tracer.record_state_diff!(
+        record: widget,
+        action: "update",
+        before_state: {"status" => "new", "plan" => "free"},
+        after_state: {"status" => "active", "plan" => "pro"}
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      payload = SolidEvents::Trace.last.events.where(event_type: "state_diff").last.payload
+      assert_equal 1, payload["changed_fields"].size
+      assert_equal 1, payload["before"].keys.size
+      assert_equal 1, payload["after"].keys.size
+    ensure
+      SolidEvents.configuration.state_diff_max_changed_fields = previous_max
+    end
+
     test "reconciles error link from trace exception context" do
       trace = SolidEvents::Tracer.start_trace!(name: "failing.request", trace_type: "request", source: "x")
       SolidEvents::Tracer.finish_trace!(

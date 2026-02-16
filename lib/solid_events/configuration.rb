@@ -40,6 +40,7 @@ module SolidEvents
                   :incident_multi_signal_sql_duration_ms,
                   :incident_suppression_rules, :incident_notifier, :api_token,
                   :evaluate_incidents_on_request, :feature_slice_keys,
+                  :state_diff_allowlist, :state_diff_blocklist, :state_diff_max_changed_fields,
                   :max_context_payload_bytes, :max_event_payload_bytes,
                   :payload_truncation_placeholder
     attr_reader :ignore_models
@@ -95,6 +96,9 @@ module SolidEvents
       @api_token = ENV["SOLID_EVENTS_API_TOKEN"]
       @evaluate_incidents_on_request = true
       @feature_slice_keys = %w[feature_flag experiment release_channel plan]
+      @state_diff_allowlist = []
+      @state_diff_blocklist = []
+      @state_diff_max_changed_fields = 20
       @retention_period = 30.days
       @error_retention_period = 90.days
       @incident_retention_period = 180.days

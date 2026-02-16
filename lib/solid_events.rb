@@ -194,6 +194,18 @@ module SolidEvents
       Array(configuration.feature_slice_keys).map(&:to_s)
     end
 
+    def state_diff_allowlist
+      Array(configuration.state_diff_allowlist).map(&:to_s)
+    end
+
+    def state_diff_blocklist
+      Array(configuration.state_diff_blocklist).map(&:to_s)
+    end
+
+    def state_diff_max_changed_fields
+      [configuration.state_diff_max_changed_fields.to_i, 1].max
+    end
+
     def canonical_schema_version
       "1"
     end

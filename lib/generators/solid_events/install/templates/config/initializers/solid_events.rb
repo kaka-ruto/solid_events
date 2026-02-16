@@ -59,6 +59,10 @@ SolidEvents.configure do |config|
   #   {kind: "error_spike", name: "metrics.poll", source: /Internal/}
   # ]
   # config.incident_notifier = ->(incident:, action:) { Rails.logger.info({incident_id: incident.id, action: action}.to_json) }
+  # State transition diff controls (for selected entity classes).
+  # config.state_diff_allowlist = ["Order", "Subscription"]
+  # config.state_diff_blocklist = ["Ahoy::Event"]
+  # config.state_diff_max_changed_fields = 20
   # Retention tiers (success traces, error traces, incidents).
   # config.retention_period = 30.days
   # config.error_retention_period = 90.days

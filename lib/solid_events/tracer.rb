@@ -551,8 +551,19 @@ module SolidEvents
       return true if record.is_a?(SolidEvents::Record)
       return true if SolidEvents.ignore_models.include?(record.class.name)
       return true if SolidEvents.ignore_model_prefixes.any? { |prefix| record.class.name.start_with?(prefix.to_s) }
+      return true unless track_state_diff_for_record?(record)
 
       false
+    end
+
+    def track_state_diff_for_record?(record)
+      type = record.class.name.to_s
+      return false if SolidEvents.state_diff_blocklist.include?(type)
+
+      allowlist = SolidEvents.state_diff_allowlist
+      return true if allowlist.empty?
+
+      allowlist.include?(type)
     end
 
     def filtered_state_diff(before_state:, after_state:)
@@ -561,7 +572,7 @@ module SolidEvents
       ignored_keys = %w[created_at updated_at]
       changed_fields = (before_hash.keys | after_hash.keys).reject { |key| ignored_keys.include?(key) }.select do |key|
         before_hash[key] != after_hash[key]
-      end
+      end.first(SolidEvents.state_diff_max_changed_fields)
       filtered_before = before_hash.slice(*changed_fields)
       filtered_after = after_hash.slice(*changed_fields)
       [filtered_before, filtered_after, changed_fields]
