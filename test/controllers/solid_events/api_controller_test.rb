@@ -391,6 +391,30 @@ module SolidEvents
       assert_equal 1, journey["error_count"]
     end
 
+    test "journeys endpoint supports errors only filter" do
+      request_id = "req-errors-only"
+      create_summary_for_metrics(
+        source: "CheckoutController#create",
+        status: "ok",
+        started_at: 10.minutes.ago,
+        request_id: request_id
+      )
+      create_summary_for_metrics(
+        source: "PaymentsController#create",
+        status: "error",
+        started_at: 9.minutes.ago,
+        request_id: request_id
+      )
+
+      get "/solid_events/api/journeys", params: {request_id: request_id, window: "24h", errors_only: true}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      journey = payload.fetch("journeys").first
+      assert_equal true, payload["errors_only"]
+      assert_equal 1, journey["trace_count"]
+      assert_equal 1, journey["error_count"]
+    end
+
     private
 
     def create_summary_for_metrics(source:, status: "ok", duration_ms: 120.0, started_at: 5.minutes.ago, context: {}, request_id: nil, entity_type: nil, entity_id: nil)

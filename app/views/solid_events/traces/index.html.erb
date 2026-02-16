@@ -224,7 +224,7 @@
   <h3>Journey Sequences</h3>
   <%= form_with url: traces_path, method: :get, local: true do |f| %>
     <% request.query_parameters.each do |key, value| %>
-      <% next if key.in?(%w[journey_group_by journey_limit page]) %>
+      <% next if key.in?(%w[journey_group_by journey_limit journey_errors_only page]) %>
       <%= hidden_field_tag key, value %>
     <% end %>
     <div class="filters-grid">
@@ -235,6 +235,10 @@
       <div>
         <%= f.label :journey_limit, "Rows" %>
         <%= f.select :journey_limit, options_for_select([5, 10, 20], @journey_limit) %>
+      </div>
+      <div>
+        <%= f.label :journey_errors_only, "Only failing journeys" %>
+        <%= f.select :journey_errors_only, options_for_select([["No", false], ["Yes", true]], @journey_errors_only) %>
       </div>
     </div>
     <div class="actions">
@@ -263,11 +267,11 @@
             <td title="<%= absolute_time(journey[:finished_at]) %>"><%= relative_time(journey[:finished_at]) %></td>
             <td>
               <% if journey[:request_id].present? %>
-                <%= link_to "API", "/solid_events/api/journeys?request_id=#{CGI.escape(journey[:request_id])}&window=#{@window}", class: "button button-muted" %>
+                <%= link_to "API", "/solid_events/api/journeys?request_id=#{CGI.escape(journey[:request_id])}&window=#{@window}&errors_only=#{@journey_errors_only}", class: "button button-muted" %>
                 <%= link_to "Traces", traces_path(request_id: journey[:request_id]), class: "button button-muted" %>
                 <%= link_to "Timeline", "/solid_events/timeline?request_id=#{CGI.escape(journey[:request_id])}&window=#{@window}", class: "button button-muted" %>
               <% elsif journey[:entity_type].present? && journey[:entity_id].present? %>
-                <%= link_to "API", "/solid_events/api/journeys?entity_type=#{CGI.escape(journey[:entity_type])}&entity_id=#{journey[:entity_id]}&window=#{@window}", class: "button button-muted" %>
+                <%= link_to "API", "/solid_events/api/journeys?entity_type=#{CGI.escape(journey[:entity_type])}&entity_id=#{journey[:entity_id]}&window=#{@window}&errors_only=#{@journey_errors_only}", class: "button button-muted" %>
                 <%= link_to "Traces", traces_path(entity_type: journey[:entity_type], entity_id: journey[:entity_id]), class: "button button-muted" %>
                 <%= link_to "Timeline", "/solid_events/timeline?entity_type=#{CGI.escape(journey[:entity_type])}&entity_id=#{journey[:entity_id]}&window=#{@window}", class: "button button-muted" %>
               <% end %>

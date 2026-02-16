@@ -239,6 +239,7 @@ with `resolved_by` and `resolution_note`.
 - `GET /solid_events/api/metrics/cohorts?cohort_key=plan&metric=error_rate&window=24h`
 - `GET /solid_events/api/journeys?request_id=req-123&window=24h`
 - `GET /solid_events/api/journeys?entity_type=Order&entity_id=123&window=24h`
+- `GET /solid_events/api/journeys?request_id=req-123&window=24h&errors_only=true`
 
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 List endpoints return `{ data: [...], next_cursor: <id|null> }` for cursor pagination.

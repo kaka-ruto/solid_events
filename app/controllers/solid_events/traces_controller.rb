@@ -409,6 +409,7 @@ module SolidEvents
     def load_journey_panel
       @journey_group_by = params[:journey_group_by].to_s
       @journey_group_by = "request" unless @journey_group_by.in?(%w[request entity])
+      @journey_errors_only = ActiveModel::Type::Boolean.new.cast(params[:journey_errors_only])
       @journey_limit = [[params[:journey_limit].to_i, 1].max, 20].min
       @journey_limit = 5 if params[:journey_limit].blank?
       @journey_rows = []
@@ -416,6 +417,7 @@ module SolidEvents
       summaries = SolidEvents::Summary.where(started_at: journey_window_start..Time.current)
       summaries = summaries.where.not(request_id: [nil, ""]) if @journey_group_by == "request"
       summaries = summaries.where.not(entity_type: [nil, ""]).where.not(entity_id: nil) if @journey_group_by == "entity"
+      summaries = summaries.where(status: "error") if @journey_errors_only
       summaries = summaries.order(started_at: :desc).limit(1_500)
 
       grouped = summaries.group_by do |summary|

@@ -99,6 +99,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Incident feed with lifecycle actions
 - [x] Hot-path drilldown with percentile/error buckets
 - [x] Journey sequences panel with request/entity grouping and quick links
+- [x] Journey views support failing-only mode for focused incident triage
 - [x] Incident shortcuts to open related journey views quickly
 - [x] Saved views / shareable investigation links
 - [x] UI compare mode (release A vs release B, cohort A vs cohort B)

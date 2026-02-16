@@ -254,6 +254,7 @@ module SolidEvents
       if params[:entity_id].present?
         scope = scope.where(entity_id: params[:entity_id].to_i)
       end
+      scope = scope.where(status: "error") if errors_only_param?
 
       traces_per_journey = [[params[:traces_per_journey].to_i, 1].max, 50].min
       traces_per_journey = 20 if params[:traces_per_journey].blank?
@@ -277,7 +278,7 @@ module SolidEvents
       end
 
       sorted = journeys.sort_by { |journey| journey[:finished_at] || Time.at(0) }.reverse.first(limit_param)
-      render json: {window: metric_window_param, journeys: sorted}
+      render json: {window: metric_window_param, errors_only: errors_only_param?, journeys: sorted}
     end
 
     private
@@ -544,6 +545,10 @@ module SolidEvents
       return "entity:#{summary.entity_type}:#{summary.entity_id}" if summary.entity_type.present? && summary.entity_id.present?
 
       nil
+    end
+
+    def errors_only_param?
+      ActiveModel::Type::Boolean.new.cast(params[:errors_only])
     end
 
     def default_metric_stats

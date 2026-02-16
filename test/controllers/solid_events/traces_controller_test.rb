@@ -236,6 +236,10 @@ module SolidEvents
       get "/solid_events", params: {journey_group_by: "entity", journey_limit: 10}
       assert_response :success
       assert_includes @response.body, "entity:Order:123"
+
+      get "/solid_events", params: {journey_group_by: "request", journey_errors_only: true, journey_limit: 10}
+      assert_response :success
+      assert_includes @response.body, "errors_only=true"
     end
 
     test "can disable request-time incident evaluation" do
