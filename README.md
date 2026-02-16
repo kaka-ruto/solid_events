@@ -86,6 +86,13 @@ rails generate solid_events:install
 rails db:migrate
 ```
 
+If your app uses an isolated `events` database (`db/events_migrate`), run:
+
+```bash
+rails solid_events:install:events_migrations
+rails db:migrate:events
+```
+
 ### Recommended: SolidErrors
 
 For a complete "Autonomous Reliability" stack, install `solid_errors`. `SolidEvents` will automatically detect it and link Traces to Errors.

@@ -1,4 +1,9 @@
 Add a `solid_events` database in `config/database.yml` and load `db/events_schema.rb`.
+Copy engine migrations and migrate the events database:
+
+  bin/rails solid_events:install:events_migrations
+  bin/rails db:migrate:events
+
 Mount the UI in routes:
 
   mount SolidEvents::Engine, at: "/solid_events"

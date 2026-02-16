@@ -1,6 +1,33 @@
 # frozen_string_literal: true
+require "fileutils"
 
 namespace :solid_events do
+  namespace :install do
+    desc "Copy solid_events engine migrations into db/events_migrate"
+    task :events_migrations do
+      source_dir = SolidEvents::Engine.root.join("db/migrate").to_s
+      destination_dir = File.expand_path("db/events_migrate", Dir.pwd)
+      FileUtils.mkdir_p(destination_dir)
+
+      copied = []
+      Dir.glob(File.join(source_dir, "*.rb")).sort.each do |source_path|
+        filename = File.basename(source_path)
+        destination_path = File.join(destination_dir, filename)
+        next if File.exist?(destination_path)
+
+        FileUtils.cp(source_path, destination_path)
+        copied << filename
+      end
+
+      if copied.empty?
+        puts "No new solid_events migrations to copy."
+      else
+        puts "Copied solid_events migrations:"
+        copied.each { |filename| puts "  - #{filename}" }
+      end
+    end
+  end
+
   desc "Evaluate incidents now"
   task evaluate_incidents: :environment do
     SolidEvents::EvaluateIncidentsJob.perform_now
