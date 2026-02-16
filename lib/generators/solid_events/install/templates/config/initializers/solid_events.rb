@@ -27,5 +27,11 @@ SolidEvents.configure do |config|
   # config.incident_error_spike_threshold_pct = 20
   # config.incident_p95_regression_factor = 1.5
   # config.incident_min_samples = 20
+  # config.incident_dedupe_window = 1.hour
+  # config.incident_suppression_rules = [
+  #   {kind: "new_fingerprint", source: "HealthcheckController#index"},
+  #   {kind: "error_spike", name: "metrics.poll", source: /Internal/}
+  # ]
+  # config.incident_notifier = ->(incident:, action:) { Rails.logger.info({incident_id: incident.id, action: action}.to_json) }
   config.retention_period = 30.days
 end

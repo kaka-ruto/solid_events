@@ -124,5 +124,17 @@ module SolidEvents
     def incident_min_samples
       configuration.incident_min_samples.to_i
     end
+
+    def incident_dedupe_window
+      configuration.incident_dedupe_window
+    end
+
+    def incident_suppression_rules
+      Array(configuration.incident_suppression_rules)
+    end
+
+    def incident_notifier
+      configuration.incident_notifier
+    end
   end
 end

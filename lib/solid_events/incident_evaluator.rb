@@ -113,12 +113,14 @@ module SolidEvents
       end
 
       def upsert_incident!(kind:, severity:, source:, name:, fingerprint: nil, payload:)
+        return if suppressed_incident?(kind: kind, source: source, name: name, fingerprint: fingerprint)
+
         existing = SolidEvents::Incident.where(
           kind: kind,
           source: source,
           name: name,
           fingerprint: fingerprint
-        ).where("detected_at >= ?", 1.hour.ago).order(detected_at: :desc).first
+        ).where("detected_at >= ?", Time.current - SolidEvents.incident_dedupe_window).order(detected_at: :desc).first
 
         if existing
           attrs = {
@@ -132,10 +134,11 @@ module SolidEvents
             attrs[:resolved_at] = nil
           end
           existing.update!(attrs)
+          notify_incident(existing, action: :reopened) if attrs[:status] == "active"
           return existing
         end
 
-        SolidEvents::Incident.create!(
+        incident = SolidEvents::Incident.create!(
           kind: kind,
           severity: severity,
           status: "active",
@@ -146,6 +149,32 @@ module SolidEvents
           detected_at: Time.current,
           last_seen_at: Time.current
         )
+        notify_incident(incident, action: :created)
+        incident
+      end
+
+      def suppressed_incident?(kind:, source:, name:, fingerprint:)
+        SolidEvents.incident_suppression_rules.any? do |rule|
+          rule = rule.to_h.transform_keys(&:to_sym)
+          match_rule_value?(rule[:kind], kind) &&
+            match_rule_value?(rule[:source], source) &&
+            match_rule_value?(rule[:name], name) &&
+            match_rule_value?(rule[:fingerprint], fingerprint)
+        end
+      end
+
+      def match_rule_value?(rule_value, actual_value)
+        return true if rule_value.nil?
+        return !!(actual_value.to_s =~ rule_value) if rule_value.is_a?(Regexp)
+
+        actual_value.to_s == rule_value.to_s
+      end
+
+      def notify_incident(incident, action:)
+        notifier = SolidEvents.incident_notifier
+        return unless notifier.respond_to?(:call)
+
+        notifier.call(incident: incident, action: action)
       end
     end
   end

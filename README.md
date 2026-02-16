@@ -208,6 +208,7 @@ end
 - **Hot Path Drilldown:** Hourly p95 and recent failing traces for a selected route/job.
 - **Incidents Feed:** Built-in detection for new fingerprints, error spikes, and p95 regressions.
 - **Incident Lifecycle:** Acknowledge, resolve, and reopen incidents from the dashboard feed.
+- **Incident Noise Control:** Suppression rules, dedupe windows, and notifier hooks for alert pipelines.
 - **Deploy-Aware Error Detection:** Highlights fingerprints unique to current deploy/version.
 
 ---

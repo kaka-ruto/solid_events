@@ -68,6 +68,9 @@ module SolidEvents
       assert_equal 20.0, configuration.incident_error_spike_threshold_pct
       assert_equal 1.5, configuration.incident_p95_regression_factor
       assert_equal 20, configuration.incident_min_samples
+      assert_equal 1.hour, configuration.incident_dedupe_window
+      assert_equal [], configuration.incident_suppression_rules
+      assert_nil configuration.incident_notifier
     end
   end
 end

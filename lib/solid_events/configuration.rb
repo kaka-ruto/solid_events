@@ -32,7 +32,8 @@ module SolidEvents
                   :deployment_id, :environment_name, :region, :sensitive_keys,
                   :redaction_placeholder, :wide_event_primary, :persist_sub_events,
                   :incident_error_spike_threshold_pct, :incident_p95_regression_factor,
-                  :incident_min_samples
+                  :incident_min_samples, :incident_dedupe_window,
+                  :incident_suppression_rules, :incident_notifier
     attr_reader :ignore_models
 
     def initialize
@@ -71,6 +72,9 @@ module SolidEvents
       @incident_error_spike_threshold_pct = 20.0
       @incident_p95_regression_factor = 1.5
       @incident_min_samples = 20
+      @incident_dedupe_window = 1.hour
+      @incident_suppression_rules = []
+      @incident_notifier = nil
       @retention_period = 30.days
     end
 

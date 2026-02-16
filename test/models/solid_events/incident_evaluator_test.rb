@@ -72,5 +72,71 @@ module SolidEvents
       SolidEvents.configuration.incident_error_spike_threshold_pct = previous_threshold
       SolidEvents.configuration.incident_min_samples = previous_min_samples
     end
+
+    test "suppression rules prevent matching incidents" do
+      previous_rules = SolidEvents.configuration.incident_suppression_rules
+      SolidEvents.configuration.incident_suppression_rules = [{kind: "new_fingerprint", source: "OrdersController#create"}]
+
+      now = Time.current
+      trace = SolidEvents::Trace.create!(
+        name: "orders.create",
+        trace_type: "request",
+        source: "OrdersController#create",
+        status: "error",
+        started_at: now - 10.minutes
+      )
+      SolidEvents::Summary.create!(
+        trace_id: trace.id,
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: trace.source,
+        status: trace.status,
+        started_at: now - 10.minutes,
+        error_fingerprint: "fp-suppressed",
+        event_count: 1,
+        record_link_count: 0,
+        error_count: 1
+      )
+
+      SolidEvents::IncidentEvaluator.evaluate!
+
+      incident = SolidEvents::Incident.where(kind: "new_fingerprint", fingerprint: "fp-suppressed").first
+      assert_nil incident
+    ensure
+      SolidEvents.configuration.incident_suppression_rules = previous_rules
+    end
+
+    test "notifier is called when new incident is created" do
+      previous_notifier = SolidEvents.configuration.incident_notifier
+      notifications = []
+      SolidEvents.configuration.incident_notifier = ->(incident:, action:) { notifications << [incident.kind, action] }
+
+      now = Time.current
+      trace = SolidEvents::Trace.create!(
+        name: "orders.create",
+        trace_type: "request",
+        source: "OrdersController#create",
+        status: "error",
+        started_at: now - 10.minutes
+      )
+      SolidEvents::Summary.create!(
+        trace_id: trace.id,
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: trace.source,
+        status: trace.status,
+        started_at: now - 10.minutes,
+        error_fingerprint: "fp-notify",
+        event_count: 1,
+        record_link_count: 0,
+        error_count: 1
+      )
+
+      SolidEvents::IncidentEvaluator.evaluate!
+
+      assert_includes notifications, ["new_fingerprint", :created]
+    ensure
+      SolidEvents.configuration.incident_notifier = previous_notifier
+    end
   end
 end
