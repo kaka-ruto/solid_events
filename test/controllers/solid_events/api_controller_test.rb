@@ -90,6 +90,15 @@ module SolidEvents
       patch "/solid_events/api/incidents/#{incident.id}/reopen"
       assert_response :success
       assert_equal "active", incident.reload.status
+
+      patch "/solid_events/api/incidents/#{incident.id}/assign", params: {owner: "alice", team: "platform"}
+      assert_response :success
+      assert_equal "alice", incident.reload.owner
+      assert_equal "platform", incident.reload.team
+
+      patch "/solid_events/api/incidents/#{incident.id}/mute", params: {minutes: 30}
+      assert_response :success
+      assert_not_nil incident.reload.muted_until
     end
 
     test "incident context bundle returns links and evidence" do
@@ -119,6 +128,34 @@ module SolidEvents
       assert_equal 1, payload["evidence"]["trace_count"]
       assert_equal 99, payload["evidence"]["error_ids"].first
       assert payload["links"]["traces_ui"].include?("name=orders.create")
+    end
+
+    test "incident handoff returns deterministic remediation payload" do
+      trace = SolidEvents::Trace.create!(
+        name: "orders.create",
+        trace_type: "request",
+        source: "OrdersController#create",
+        status: "error",
+        started_at: Time.current
+      )
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "OrdersController#create",
+        name: "orders.create",
+        payload: {"trace_ids" => [trace.id]},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      get "/solid_events/api/incidents/#{incident.id}/handoff"
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal incident.id, payload["incident"]["id"]
+      assert_equal "1", payload["constraints"]["schema_version"]
+      assert payload["next_actions"].any?
+      assert payload["hints"]["suggested_commands"].any?
     end
 
     test "api token is enforced when configured" do

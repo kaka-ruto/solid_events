@@ -97,5 +97,36 @@ module SolidEvents
       assert_includes @response.body, "Hot Path Drilldown"
       assert_includes @response.body, "Hourly Buckets"
     end
+
+    test "can disable request-time incident evaluation" do
+      previous = SolidEvents.configuration.evaluate_incidents_on_request
+      SolidEvents.configuration.evaluate_incidents_on_request = false
+
+      trace = SolidEvents::Trace.create!(
+        name: "orders.create",
+        trace_type: "request",
+        source: "OrdersController#create",
+        status: "error",
+        started_at: Time.current
+      )
+      SolidEvents::Summary.create!(
+        trace_id: trace.id,
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: trace.source,
+        status: trace.status,
+        started_at: trace.started_at,
+        error_fingerprint: "fp-no-eval",
+        event_count: 1,
+        record_link_count: 0,
+        error_count: 1
+      )
+
+      get "/solid_events"
+      assert_response :success
+      assert_equal 0, SolidEvents::Incident.count
+    ensure
+      SolidEvents.configuration.evaluate_incidents_on_request = previous
+    end
   end
 end

@@ -59,6 +59,20 @@ module SolidEvents
       render json: serialize_incident(incident)
     end
 
+    def assign_incident
+      incident = SolidEvents::Incident.find(params[:id])
+      incident.update!(owner: params[:owner].presence, team: params[:team].presence)
+      render json: serialize_incident(incident)
+    end
+
+    def mute_incident
+      incident = SolidEvents::Incident.find(params[:id])
+      minutes = params[:minutes].to_i
+      minutes = 60 if minutes <= 0
+      incident.mute_for!(minutes.minutes)
+      render json: serialize_incident(incident)
+    end
+
     def resolve_incident
       incident = SolidEvents::Incident.find(params[:id])
       incident.resolve!
@@ -69,6 +83,39 @@ module SolidEvents
       incident = SolidEvents::Incident.find(params[:id])
       incident.reopen!
       render json: serialize_incident(incident)
+    end
+
+    def incident_handoff
+      incident = SolidEvents::Incident.find(params[:id])
+      traces = incident_related_traces(incident).includes(:error_links, :summary).limit(limit_param)
+      primary_trace = traces.first
+
+      render json: {
+        goal: "Investigate and fix #{incident.kind} for #{incident.source}/#{incident.name}",
+        incident: serialize_incident(incident),
+        evidence: {
+          trace_count: traces.size,
+          primary_trace: primary_trace&.canonical_event,
+          trace_ids: traces.map(&:id),
+          error_ids: traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.uniq
+        },
+        constraints: {
+          schema_version: SolidEvents.canonical_schema_version,
+          keep_regression_tests_green: true,
+          avoid_sensitive_data: true
+        },
+        next_actions: [
+          "Reproduce from primary trace/request context",
+          "Add or update a focused failing test",
+          "Implement minimal fix",
+          "Run targeted tests then full suite",
+          "Update incident status to resolved when verified"
+        ],
+        hints: {
+          suspected_files: suspect_files_for(incident: incident, trace: primary_trace),
+          suggested_commands: suggested_commands_for(incident: incident)
+        }
+      }
     end
 
     def trace
@@ -105,6 +152,8 @@ module SolidEvents
         kind: incident.kind,
         severity: incident.severity,
         status: incident.status,
+        owner: incident.owner,
+        team: incident.team,
         source: incident.source,
         name: incident.name,
         fingerprint: incident.fingerprint,
@@ -112,8 +161,33 @@ module SolidEvents
         detected_at: incident.detected_at,
         last_seen_at: incident.last_seen_at,
         acknowledged_at: incident.acknowledged_at,
-        resolved_at: incident.resolved_at
+        resolved_at: incident.resolved_at,
+        muted_until: incident.muted_until
       }
+    end
+
+    def suspect_files_for(incident:, trace:)
+      files = []
+      if incident.source.to_s.include?("#")
+        controller = incident.source.to_s.split("#").first.underscore
+        files << "app/controllers/#{controller}.rb"
+        files << "test/controllers/#{controller}_test.rb"
+      end
+      if trace&.summary&.entity_type.present?
+        model_name = trace.summary.entity_type.to_s.underscore
+        files << "app/models/#{model_name}.rb"
+      end
+      files.uniq
+    end
+
+    def suggested_commands_for(incident:)
+      commands = []
+      if incident.source.to_s.include?("#")
+        controller = incident.source.to_s.split("#").first.underscore
+        commands << "bin/rails test test/controllers/#{controller}_test.rb"
+      end
+      commands << "bin/rails test"
+      commands
     end
 
     def incident_related_traces(incident)

@@ -75,7 +75,9 @@ module SolidEvents
               threshold_pct: SolidEvents.incident_error_spike_threshold_pct,
               window: "24h",
               trace_ids: evidence_trace_ids_for(name: name, source: source),
-              trace_query: {name: name, source: source}
+              trace_query: {name: name, source: source},
+              top_entities: top_entities_for(rows),
+              top_request_ids: top_request_ids_for(rows)
             }
           )
         end
@@ -111,7 +113,9 @@ module SolidEvents
               recent_window: "last_1h",
               baseline_window: "last_7d_excluding_1h",
               trace_ids: evidence_trace_ids_for(name: name, source: source),
-              trace_query: {name: name, source: source}
+              trace_query: {name: name, source: source},
+              top_entities: top_entities_for(rows),
+              top_request_ids: top_request_ids_for(rows)
             }
           )
         end
@@ -144,6 +148,26 @@ module SolidEvents
           .pluck(:trace_id)
       end
 
+      def top_entities_for(rows)
+        rows
+          .map { |row| [row.entity_type, row.entity_id] }
+          .reject { |type, id| type.blank? || id.blank? }
+          .tally
+          .sort_by { |(_, count)| -count }
+          .first(5)
+          .map { |(type, id), count| {entity_type: type, entity_id: id, count: count} }
+      end
+
+      def top_request_ids_for(rows)
+        rows
+          .map(&:request_id)
+          .reject(&:blank?)
+          .tally
+          .sort_by { |(_, count)| -count }
+          .first(5)
+          .map { |request_id, count| {request_id: request_id, count: count} }
+      end
+
       def upsert_incident!(kind:, severity:, source:, name:, fingerprint: nil, payload:)
         return if suppressed_incident?(kind: kind, source: source, name: name, fingerprint: fingerprint)
 
@@ -155,6 +179,8 @@ module SolidEvents
         ).where("detected_at >= ?", Time.current - SolidEvents.incident_dedupe_window).order(detected_at: :desc).first
 
         if existing
+          return existing if existing.muted_until && existing.muted_until > Time.current
+
           attrs = {
             payload: payload,
             detected_at: Time.current,

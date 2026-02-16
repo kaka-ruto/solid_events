@@ -11,6 +11,7 @@ module SolidEvents
 
     scope :recent, -> { order(detected_at: :desc) }
     scope :active_first, -> { order(Arel.sql("CASE status WHEN 'active' THEN 0 WHEN 'acknowledged' THEN 1 ELSE 2 END"), detected_at: :desc) }
+    scope :unmuted, -> { where("muted_until IS NULL OR muted_until < ?", Time.current) }
 
     def acknowledge!
       update!(status: "acknowledged", acknowledged_at: Time.current)
@@ -22,6 +23,10 @@ module SolidEvents
 
     def reopen!
       update!(status: "active", resolved_at: nil)
+    end
+
+    def mute_for!(duration)
+      update!(muted_until: duration.from_now)
     end
   end
 end

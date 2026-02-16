@@ -105,6 +105,8 @@ ActiveRecord::Schema[7.1].define do
     t.string :kind, null: false
     t.string :severity, null: false, default: "warning"
     t.string :status, null: false, default: "active"
+    t.string :owner
+    t.string :team
     t.string :source
     t.string :name
     t.string :fingerprint
@@ -113,12 +115,15 @@ ActiveRecord::Schema[7.1].define do
     t.datetime :last_seen_at, null: false
     t.datetime :acknowledged_at
     t.datetime :resolved_at
+    t.datetime :muted_until
     t.timestamps
   end
 
   add_index :solid_events_incidents, :kind
   add_index :solid_events_incidents, :severity
   add_index :solid_events_incidents, :status
+  add_index :solid_events_incidents, :owner
+  add_index :solid_events_incidents, :team
   add_index :solid_events_incidents, :source
   add_index :solid_events_incidents, :name
   add_index :solid_events_incidents, :fingerprint
