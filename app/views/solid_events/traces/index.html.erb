@@ -206,6 +206,13 @@
               <% trace_query = incident.payload.to_h["trace_query"].to_h.symbolize_keys %>
               <% if trace_query.present? %>
                 <%= link_to "Open traces", traces_path(trace_query), class: "button button-muted" %>
+                <% compare_params = {
+                  compare_dimension: "deployment_id",
+                  compare_metric: "error_rate",
+                  compare_window: "24h",
+                  compare_baseline_window: "7d"
+                }.merge(trace_query.slice("name", "source")) %>
+                <%= link_to "Compare deploy", traces_path(compare_params), class: "button button-muted" %>
               <% end %>
               <% if incident.status == "active" %>
                 <%= button_to "Ack", acknowledge_incident_path(incident), method: :patch, class: "button button-muted" %>
@@ -240,6 +247,7 @@
           <th>P95</th>
           <th>P99</th>
           <th>Error Rate</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -252,10 +260,13 @@
             <td><%= path[:p95_ms] %> ms</td>
             <td><%= path[:p99_ms] %> ms</td>
             <td><%= path[:error_rate_pct] %>%</td>
+            <td>
+              <%= link_to "Compare deploy", traces_path(compare_dimension: "deployment_id", compare_metric: "latency_avg", compare_window: "24h", compare_baseline_window: "7d", source: path[:source]), class: "button button-muted" %>
+            </td>
           </tr>
         <% end %>
         <% if @hot_paths.empty? %>
-          <tr><td colspan="7" class="muted">Not enough traces to compute hot paths yet.</td></tr>
+          <tr><td colspan="8" class="muted">Not enough traces to compute hot paths yet.</td></tr>
         <% end %>
       </tbody>
     </table>

@@ -61,6 +61,7 @@ module SolidEvents
       assert_includes @response.body, "Incidents Feed"
       assert_includes @response.body, "Actions"
       assert_includes @response.body, "Open traces"
+      assert_includes @response.body, "Compare deploy"
       assert_includes @response.body, "Throughput"
       assert_includes @response.body, "Hot Paths"
       assert_includes @response.body, "Regression Candidates"
@@ -90,6 +91,8 @@ module SolidEvents
       assert_includes @response.body, "Open all traces for this entity"
       assert_includes @response.body, "Open all traces for this error fingerprint"
       assert_includes @response.body, "Open all traces for this request id"
+      assert_includes @response.body, "Journey API (entity)"
+      assert_includes @response.body, "Journey API (request)"
       assert_includes @response.body, related_trace.name
       assert_includes @response.body, "/solid_errors/123"
 

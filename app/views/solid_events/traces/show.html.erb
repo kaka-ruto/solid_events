@@ -61,12 +61,14 @@
   <p>
     <% if @trace.summary&.entity_type.present? && @trace.summary&.entity_id.present? %>
       <%= link_to "Open all traces for this entity", traces_path(entity_type: @trace.summary.entity_type, entity_id: @trace.summary.entity_id), class: "button button-muted" %>
+      <%= link_to "Journey API (entity)", "/solid_events/api/journeys?entity_type=#{CGI.escape(@trace.summary.entity_type)}&entity_id=#{@trace.summary.entity_id}&window=24h", class: "button button-muted" %>
     <% end %>
     <% if @trace.summary&.error_fingerprint.present? %>
       <%= link_to "Open all traces for this error fingerprint", traces_path(error_fingerprint: @trace.summary.error_fingerprint), class: "button button-muted" %>
     <% end %>
     <% if @trace.summary&.request_id.present? %>
       <%= link_to "Open all traces for this request id", traces_path(request_id: @trace.summary.request_id), class: "button button-muted" %>
+      <%= link_to "Journey API (request)", "/solid_events/api/journeys?request_id=#{CGI.escape(@trace.summary.request_id)}&window=24h", class: "button button-muted" %>
     <% end %>
   </p>
   <p class="muted">
