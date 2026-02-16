@@ -10,6 +10,7 @@ module SolidEvents
     before_action :set_trace, only: :show
 
     def index
+      apply_saved_view!
       @query = params[:q].to_s.strip
       @status = params[:status].to_s
       @trace_type = params[:trace_type].to_s
@@ -64,6 +65,7 @@ module SolidEvents
       load_compare_panel
       load_journey_panel
       load_incidents
+      load_saved_views
     end
 
     def hot_path
@@ -156,6 +158,18 @@ module SolidEvents
     end
 
     private
+
+    def apply_saved_view!
+      saved_view = SolidEvents::SavedView.find_by(id: params[:saved_view_id])
+      return unless saved_view
+      return unless request.get?
+
+      saved_filters = saved_view.filters.to_h.transform_keys(&:to_s)
+      saved_filters.each do |key, value|
+        params[key] = value if params[key].blank?
+      end
+      @active_saved_view = saved_view
+    end
 
     def sanitize_per_page(value)
       candidate = value.to_i
@@ -560,8 +574,22 @@ module SolidEvents
       end
     end
 
+    def load_saved_views
+      @saved_views = if saved_views_table_available?
+        SolidEvents::SavedView.recent.limit(20)
+      else
+        []
+      end
+    end
+
     def incident_table_available?
       @incident_table_available ||= SolidEvents::Incident.connection.data_source_exists?(SolidEvents::Incident.table_name)
+    rescue StandardError
+      false
+    end
+
+    def saved_views_table_available?
+      @saved_views_table_available ||= SolidEvents::SavedView.connection.data_source_exists?(SolidEvents::SavedView.table_name)
     rescue StandardError
       false
     end

@@ -100,7 +100,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Hot-path drilldown with percentile/error buckets
 - [x] Journey sequences panel with request/entity grouping and quick links
 - [x] Incident shortcuts to open related journey views quickly
-- [ ] Saved views / shared investigation links
+- [x] Saved views / shareable investigation links
 - [x] UI compare mode (release A vs release B, cohort A vs cohort B)
 - [x] Timeline view optimized for “tell me what happened” narratives
 

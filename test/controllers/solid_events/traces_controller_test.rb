@@ -61,6 +61,7 @@ module SolidEvents
       assert_includes @response.body, "Incidents Feed"
       assert_includes @response.body, "Journey Sequences"
       assert_includes @response.body, "Timeline"
+      assert_includes @response.body, "Saved Views"
       assert_includes @response.body, "Actions"
       assert_includes @response.body, "Open traces"
       assert_includes @response.body, "Compare deploy"
@@ -109,6 +110,17 @@ module SolidEvents
       assert_response :success
       assert_includes @response.body, "Timeline View"
       assert_includes @response.body, "OrdersController#create"
+    end
+
+    test "saved views are listed on the traces index" do
+      saved_view = SolidEvents::SavedView.create!(
+        name: "Checkout errors",
+        filters: {"source" => "CheckoutController#create", "status" => "error"}
+      )
+
+      get "/solid_events"
+      assert_response :success
+      assert_includes @response.body, saved_view.name
     end
 
     test "index compare panel supports custom windows and metrics" do

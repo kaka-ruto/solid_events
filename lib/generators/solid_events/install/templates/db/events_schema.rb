@@ -135,4 +135,14 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_incidents, :name
   add_index :solid_events_incidents, :fingerprint
   add_index :solid_events_incidents, :detected_at
+
+  create_table :solid_events_saved_views, force: :cascade do |t|
+    t.string :name, null: false
+    t.json :filters, default: {}
+    t.string :created_by
+    t.timestamps
+  end
+
+  add_index :solid_events_saved_views, :name
+  add_index :solid_events_saved_views, :created_at
 end

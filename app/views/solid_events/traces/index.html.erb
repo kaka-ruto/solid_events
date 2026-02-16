@@ -171,6 +171,56 @@
 </div>
 
 <div class="card">
+  <h3>Saved Views</h3>
+  <%= form_with url: saved_views_path, method: :post, local: true do |f| %>
+    <div class="filters-grid">
+      <div>
+        <%= f.label :name, "Name" %>
+        <%= f.text_field :name, placeholder: "e.g. Checkout regressions", required: true %>
+      </div>
+      <div>
+        <%= f.label :created_by, "Created by" %>
+        <%= f.text_field :created_by, placeholder: "optional" %>
+      </div>
+    </div>
+    <% request.query_parameters.each do |key, value| %>
+      <%= hidden_field_tag "filters[#{key}]", value %>
+    <% end %>
+    <div class="actions">
+      <%= f.submit "Save Current Filters" %>
+    </div>
+  <% end %>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Created By</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @saved_views.each do |saved_view| %>
+          <tr>
+            <td><%= saved_view.name %></td>
+            <td><%= saved_view.created_by.presence || "n/a" %></td>
+            <td title="<%= absolute_time(saved_view.created_at) %>"><%= relative_time(saved_view.created_at) %></td>
+            <td>
+              <%= link_to "Apply", traces_path(saved_view_id: saved_view.id), class: "button button-muted" %>
+              <%= button_to "Delete", saved_view_path(saved_view), method: :delete, class: "button button-muted" %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @saved_views.empty? %>
+          <tr><td colspan="4" class="muted">No saved views yet.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
   <h3>Journey Sequences</h3>
   <%= form_with url: traces_path, method: :get, local: true do |f| %>
     <% request.query_parameters.each do |key, value| %>

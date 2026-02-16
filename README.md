@@ -60,6 +60,7 @@ Stop renting your data.
 - **📈 Compare Mode:** UI + API support for window-over-window error-rate and latency comparisons.
 - **🧭 Journey Sequences:** UI panel + API to reconstruct request/entity trace sequences for story-first debugging.
 - **🕒 Timeline View:** Ordered cross-trace timeline for request/entity investigations.
+- **💾 Saved Views:** Persist and re-apply investigation filters directly from the traces dashboard.
 - **🔐 API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
