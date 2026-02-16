@@ -23,5 +23,9 @@ SolidEvents.configure do |config|
   # Wide-event primary mode: keep canonical summaries, optionally skip sub-event rows.
   # config.wide_event_primary = true
   # config.persist_sub_events = false
+  # Incident detection thresholds.
+  # config.incident_error_spike_threshold_pct = 20
+  # config.incident_p95_regression_factor = 1.5
+  # config.incident_min_samples = 20
   config.retention_period = 30.days
 end

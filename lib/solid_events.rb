@@ -112,5 +112,17 @@ module SolidEvents
     def persist_sub_events?
       !!configuration.persist_sub_events
     end
+
+    def incident_error_spike_threshold_pct
+      configuration.incident_error_spike_threshold_pct.to_f
+    end
+
+    def incident_p95_regression_factor
+      configuration.incident_p95_regression_factor.to_f
+    end
+
+    def incident_min_samples
+      configuration.incident_min_samples.to_i
+    end
   end
 end

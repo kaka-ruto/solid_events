@@ -21,6 +21,9 @@ ActiveRecord::MigrationContext.new(migration_paths).migrate
 class ActiveSupport::TestCase
   setup do
     SolidEvents::Current.reset
+    if defined?(SolidEvents::Incident) && SolidEvents::Incident.connection.data_source_exists?(SolidEvents::Incident.table_name)
+      SolidEvents::Incident.delete_all
+    end
     if defined?(SolidEvents::Summary) && SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
       SolidEvents::Summary.delete_all
     end

@@ -30,7 +30,9 @@ module SolidEvents
                   :tail_sample_slow_ms, :always_sample_context_keys, :always_sample_when,
                   :emit_canonical_log_line, :service_name, :service_version,
                   :deployment_id, :environment_name, :region, :sensitive_keys,
-                  :redaction_placeholder, :wide_event_primary, :persist_sub_events
+                  :redaction_placeholder, :wide_event_primary, :persist_sub_events,
+                  :incident_error_spike_threshold_pct, :incident_p95_regression_factor,
+                  :incident_min_samples
     attr_reader :ignore_models
 
     def initialize
@@ -66,6 +68,9 @@ module SolidEvents
       @redaction_placeholder = "[REDACTED]"
       @wide_event_primary = false
       @persist_sub_events = true
+      @incident_error_spike_threshold_pct = 20.0
+      @incident_p95_regression_factor = 1.5
+      @incident_min_samples = 20
       @retention_period = 30.days
     end
 

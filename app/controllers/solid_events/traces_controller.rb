@@ -56,8 +56,10 @@ module SolidEvents
         .offset((@page - 1) * @per_page)
         .limit(@per_page)
 
+      SolidEvents::IncidentEvaluator.evaluate!
       load_slo_panel(scope)
       load_index_insights
+      load_incidents
     end
 
     def hot_path
@@ -382,6 +384,20 @@ module SolidEvents
         p95_ms: percentile(durations, 0.95),
         p99_ms: percentile(durations, 0.99)
       }
+    end
+
+    def load_incidents
+      @incidents = if incident_table_available?
+        SolidEvents::Incident.recent.limit(25)
+      else
+        []
+      end
+    end
+
+    def incident_table_available?
+      @incident_table_available ||= SolidEvents::Incident.connection.data_source_exists?(SolidEvents::Incident.table_name)
+    rescue StandardError
+      false
     end
   end
 end

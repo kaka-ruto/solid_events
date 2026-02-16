@@ -65,6 +65,9 @@ module SolidEvents
       assert_equal "[REDACTED]", configuration.redaction_placeholder
       assert_equal false, configuration.wide_event_primary
       assert_equal true, configuration.persist_sub_events
+      assert_equal 20.0, configuration.incident_error_spike_threshold_pct
+      assert_equal 1.5, configuration.incident_p95_regression_factor
+      assert_equal 20, configuration.incident_min_samples
     end
   end
 end

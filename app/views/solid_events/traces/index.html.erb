@@ -101,6 +101,39 @@
 </div>
 
 <div class="card">
+  <h3>Incidents Feed</h3>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Detected</th>
+          <th>Severity</th>
+          <th>Kind</th>
+          <th>Name</th>
+          <th>Source</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @incidents.each do |incident| %>
+          <tr>
+            <td title="<%= absolute_time(incident.detected_at) %>"><%= relative_time(incident.detected_at) %></td>
+            <td><span class="badge <%= incident.severity == "critical" ? "error" : "muted" %>"><%= incident.severity %></span></td>
+            <td><%= incident.kind %></td>
+            <td><%= incident.name %></td>
+            <td><%= incident.source %></td>
+            <td><%= incident.payload.to_h.to_json %></td>
+          </tr>
+        <% end %>
+        <% if @incidents.empty? %>
+          <tr><td colspan="6" class="muted">No incidents detected.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
   <h3>Hot Paths (7d)</h3>
   <div class="table-scroll">
     <table class="events-table">

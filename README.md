@@ -206,6 +206,7 @@ end
 - **Hot Paths & Percentiles:** Automatic p50/p95/p99 and error-rate visibility for top paths/jobs.
 - **SLO Panels:** Throughput + error rate + p95/p99 at a glance for the active filter window.
 - **Hot Path Drilldown:** Hourly p95 and recent failing traces for a selected route/job.
+- **Incidents Feed:** Built-in detection for new fingerprints, error spikes, and p95 regressions.
 - **Deploy-Aware Error Detection:** Highlights fingerprints unique to current deploy/version.
 
 ---

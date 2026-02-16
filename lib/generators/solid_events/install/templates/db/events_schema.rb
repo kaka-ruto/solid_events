@@ -99,4 +99,22 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_summaries, :service_version
   add_index :solid_events_summaries, :deployment_id
   add_index :solid_events_summaries, :region
+
+  create_table :solid_events_incidents, force: :cascade do |t|
+    t.string :kind, null: false
+    t.string :severity, null: false, default: "warning"
+    t.string :source
+    t.string :name
+    t.string :fingerprint
+    t.json :payload, default: {}
+    t.datetime :detected_at, null: false
+    t.timestamps
+  end
+
+  add_index :solid_events_incidents, :kind
+  add_index :solid_events_incidents, :severity
+  add_index :solid_events_incidents, :source
+  add_index :solid_events_incidents, :name
+  add_index :solid_events_incidents, :fingerprint
+  add_index :solid_events_incidents, :detected_at
 end
