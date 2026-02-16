@@ -62,6 +62,7 @@ module SolidEvents
       load_slo_panel(scope)
       load_index_insights
       load_compare_panel
+      load_journey_panel
       load_incidents
     end
 
@@ -351,6 +352,50 @@ module SolidEvents
           baseline_count: baseline_stats[:count]
         }
       end.sort_by { |row| [-row[:current_count], row[:key].to_s] }.first(10)
+    end
+
+    def load_journey_panel
+      @journey_group_by = params[:journey_group_by].to_s
+      @journey_group_by = "request" unless @journey_group_by.in?(%w[request entity])
+      @journey_limit = [[params[:journey_limit].to_i, 1].max, 20].min
+      @journey_limit = 5 if params[:journey_limit].blank?
+      @journey_rows = []
+
+      summaries = SolidEvents::Summary.where(started_at: journey_window_start..Time.current)
+      summaries = summaries.where.not(request_id: [nil, ""]) if @journey_group_by == "request"
+      summaries = summaries.where.not(entity_type: [nil, ""]).where.not(entity_id: nil) if @journey_group_by == "entity"
+      summaries = summaries.order(started_at: :desc).limit(1_500)
+
+      grouped = summaries.group_by do |summary|
+        if @journey_group_by == "request"
+          "request:#{summary.request_id}"
+        else
+          "entity:#{summary.entity_type}:#{summary.entity_id}"
+        end
+      end
+
+      @journey_rows = grouped.map do |journey_key, rows|
+        ordered = rows.sort_by(&:started_at)
+        last = ordered.last
+        {
+          journey_key: journey_key,
+          request_id: last.request_id,
+          entity_type: last.entity_type,
+          entity_id: last.entity_id,
+          trace_count: rows.size,
+          error_count: rows.count { |row| row.status == "error" },
+          started_at: ordered.first.started_at,
+          finished_at: last.finished_at || last.started_at
+        }
+      end.sort_by { |row| row[:finished_at] || Time.at(0) }.reverse.first(@journey_limit)
+    end
+
+    def journey_window_start
+      case @window
+      when "1h" then 1.hour.ago
+      when "7d" then 7.days.ago
+      else 24.hours.ago
+      end
     end
 
     def compare_windows

@@ -171,6 +171,66 @@
 </div>
 
 <div class="card">
+  <h3>Journey Sequences</h3>
+  <%= form_with url: traces_path, method: :get, local: true do |f| %>
+    <% request.query_parameters.each do |key, value| %>
+      <% next if key.in?(%w[journey_group_by journey_limit page]) %>
+      <%= hidden_field_tag key, value %>
+    <% end %>
+    <div class="filters-grid">
+      <div>
+        <%= f.label :journey_group_by, "Group by" %>
+        <%= f.select :journey_group_by, options_for_select([["Request id", "request"], ["Entity", "entity"]], @journey_group_by) %>
+      </div>
+      <div>
+        <%= f.label :journey_limit, "Rows" %>
+        <%= f.select :journey_limit, options_for_select([5, 10, 20], @journey_limit) %>
+      </div>
+    </div>
+    <div class="actions">
+      <%= f.submit "Refresh Journeys" %>
+    </div>
+  <% end %>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Journey</th>
+          <th>Traces</th>
+          <th>Errors</th>
+          <th>Started</th>
+          <th>Finished</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @journey_rows.each do |journey| %>
+          <tr>
+            <td><%= journey[:journey_key] %></td>
+            <td><%= journey[:trace_count] %></td>
+            <td><%= journey[:error_count] %></td>
+            <td title="<%= absolute_time(journey[:started_at]) %>"><%= relative_time(journey[:started_at]) %></td>
+            <td title="<%= absolute_time(journey[:finished_at]) %>"><%= relative_time(journey[:finished_at]) %></td>
+            <td>
+              <% if journey[:request_id].present? %>
+                <%= link_to "API", "/solid_events/api/journeys?request_id=#{CGI.escape(journey[:request_id])}&window=#{@window}", class: "button button-muted" %>
+                <%= link_to "Traces", traces_path(request_id: journey[:request_id]), class: "button button-muted" %>
+              <% elsif journey[:entity_type].present? && journey[:entity_id].present? %>
+                <%= link_to "API", "/solid_events/api/journeys?entity_type=#{CGI.escape(journey[:entity_type])}&entity_id=#{journey[:entity_id]}&window=#{@window}", class: "button button-muted" %>
+                <%= link_to "Traces", traces_path(entity_type: journey[:entity_type], entity_id: journey[:entity_id]), class: "button button-muted" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @journey_rows.empty? %>
+          <tr><td colspan="6" class="muted">No journeys in this window.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
   <h3>Incidents Feed</h3>
   <div class="table-scroll">
     <table class="events-table">

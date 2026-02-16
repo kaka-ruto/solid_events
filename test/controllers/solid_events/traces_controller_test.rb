@@ -59,6 +59,7 @@ module SolidEvents
       assert_response :success
       assert_includes @response.body, "Context Graph"
       assert_includes @response.body, "Incidents Feed"
+      assert_includes @response.body, "Journey Sequences"
       assert_includes @response.body, "Actions"
       assert_includes @response.body, "Open traces"
       assert_includes @response.body, "Compare deploy"
@@ -170,6 +171,51 @@ module SolidEvents
       assert_includes @response.body, "checkout_v2"
       assert_includes @response.body, "Feature key"
       assert_includes @response.body, "Feature value"
+    end
+
+    test "index journey panel supports request and entity grouping" do
+      request_trace = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "error",
+        started_at: 2.minutes.ago
+      )
+      request_trace.create_summary!(
+        name: request_trace.name,
+        trace_type: request_trace.trace_type,
+        source: request_trace.source,
+        status: request_trace.status,
+        request_id: "req-journey-1",
+        started_at: request_trace.started_at,
+        finished_at: request_trace.started_at + 1.minute
+      )
+
+      entity_trace = SolidEvents::Trace.create!(
+        name: "order.update",
+        trace_type: "request",
+        source: "OrdersController#update",
+        status: "ok",
+        started_at: 1.minute.ago
+      )
+      entity_trace.create_summary!(
+        name: entity_trace.name,
+        trace_type: entity_trace.trace_type,
+        source: entity_trace.source,
+        status: entity_trace.status,
+        entity_type: "Order",
+        entity_id: 123,
+        started_at: entity_trace.started_at,
+        finished_at: entity_trace.started_at + 1.minute
+      )
+
+      get "/solid_events", params: {journey_group_by: "request", journey_limit: 10}
+      assert_response :success
+      assert_includes @response.body, "request:req-journey-1"
+
+      get "/solid_events", params: {journey_group_by: "entity", journey_limit: 10}
+      assert_response :success
+      assert_includes @response.body, "entity:Order:123"
     end
 
     test "can disable request-time incident evaluation" do
