@@ -267,6 +267,7 @@ module SolidEvents
         path: context["path"],
         job_class: trace.trace_type == "job" ? trace.source : nil,
         queue_name: context["queue"],
+        schema_version: SolidEvents.canonical_schema_version,
         service_name: context["service_name"],
         environment_name: context["environment_name"],
         service_version: context["service_version"],

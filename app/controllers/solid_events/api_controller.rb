@@ -27,6 +27,32 @@ module SolidEvents
       }
     end
 
+    def incident_context_bundle
+      incident = SolidEvents::Incident.find(params[:id])
+      traces = incident_related_traces(incident).includes(:error_links).limit(limit_param)
+      error_ids = traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.compact.uniq
+      trace_query = incident.payload.to_h["trace_query"].to_h
+
+      render json: {
+        incident: serialize_incident(incident),
+        evidence: {
+          trace_count: traces.size,
+          error_ids: error_ids,
+          traces: traces.map(&:canonical_event)
+        },
+        suggested_filters: trace_query,
+        links: {
+          traces_ui: traces_path(trace_query),
+          incident_traces_api: api_incident_traces_path(incident),
+          incident_lifecycle: {
+            acknowledge: "/solid_events/api/incidents/#{incident.id}/acknowledge",
+            resolve: "/solid_events/api/incidents/#{incident.id}/resolve",
+            reopen: "/solid_events/api/incidents/#{incident.id}/reopen"
+          }
+        }
+      }
+    end
+
     def acknowledge_incident
       incident = SolidEvents::Incident.find(params[:id])
       incident.acknowledge!

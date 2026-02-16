@@ -39,6 +39,7 @@ Stop renting your data.
 - **🤖 Auto-Labeling:** Intelligently maps controller actions to business terms (e.g., `OrdersController#create` becomes `order.created`).
 - **👤 Context Scraping:** Automatically detects `current_user`, `current_account`, or `tenant_id` from your controllers and tags the trace.
 - **📊 Canonical Wide Events:** Maintains one summary row per trace with outcome, entity, HTTP, timing, and correlation fields for fast filtering.
+- **🧾 Stable Schema Versioning:** Canonical events include `schema_version` for agent-safe parsing across upgrades.
 - **🎯 Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
 - **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
 - **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
@@ -200,12 +201,14 @@ The mounted engine includes JSON endpoints for automation/agents:
 
 - `GET /solid_events/api/incidents?status=active&limit=50`
 - `GET /solid_events/api/incidents/:id/traces`
+- `GET /solid_events/api/incidents/:id/context_bundle`
 - `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
 - `GET /solid_events/api/traces/:id`
 - `GET /solid_events/api/traces?error_fingerprint=...`
 - `GET /solid_events/api/traces?entity_type=Order&entity_id=123`
 
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
+Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.
 
 ### Scheduling (Production)
 

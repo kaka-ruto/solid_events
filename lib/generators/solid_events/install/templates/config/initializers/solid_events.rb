@@ -39,6 +39,8 @@ SolidEvents.configure do |config|
   # config.incident_retention_period = 180.days
   # Protect /solid_events/api/* endpoints.
   # config.api_token = ENV["SOLID_EVENTS_API_TOKEN"]
+  # Disable request-time evaluator and rely on scheduled job in production.
+  # config.evaluate_incidents_on_request = !Rails.env.production?
   # Schedule incident evaluation and prune jobs via your scheduler:
   # - SolidEvents::EvaluateIncidentsJob.perform_later (e.g. every 5 minutes)
   # - SolidEvents::PruneJob.perform_later (e.g. daily)

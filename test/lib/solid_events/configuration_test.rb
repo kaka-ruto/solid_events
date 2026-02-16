@@ -74,6 +74,7 @@ module SolidEvents
       assert_equal 1.hour, configuration.incident_dedupe_window
       assert_equal [], configuration.incident_suppression_rules
       assert_nil configuration.incident_notifier
+      assert_equal true, configuration.evaluate_incidents_on_request
       if ENV["SOLID_EVENTS_API_TOKEN"].nil?
         assert_nil configuration.api_token
       else

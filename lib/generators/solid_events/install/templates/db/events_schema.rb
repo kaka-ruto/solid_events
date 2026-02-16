@@ -62,6 +62,7 @@ ActiveRecord::Schema[7.1].define do
     t.string :path
     t.string :job_class
     t.string :queue_name
+    t.string :schema_version, null: false, default: "1"
     t.string :service_name
     t.string :environment_name
     t.string :service_version

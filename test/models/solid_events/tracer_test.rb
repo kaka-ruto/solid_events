@@ -134,6 +134,7 @@ module SolidEvents
       assert_equal "2026.02.16", trace.summary.service_version
       assert_equal "deploy-1", trace.summary.deployment_id
       assert_equal "us-east-1", trace.summary.region
+      assert_equal "1", trace.summary.schema_version
     end
 
     test "does not link ignored model prefixes" do

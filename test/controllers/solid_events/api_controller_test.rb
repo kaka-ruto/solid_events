@@ -92,6 +92,35 @@ module SolidEvents
       assert_equal "active", incident.reload.status
     end
 
+    test "incident context bundle returns links and evidence" do
+      trace = SolidEvents::Trace.create!(
+        name: "orders.create",
+        trace_type: "request",
+        source: "OrdersController#create",
+        status: "error",
+        started_at: Time.current
+      )
+      trace.error_links.create!(solid_error_id: 99)
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "OrdersController#create",
+        name: "orders.create",
+        payload: {"trace_ids" => [trace.id], "trace_query" => {"name" => "orders.create"}},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      get "/solid_events/api/incidents/#{incident.id}/context_bundle"
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal incident.id, payload["incident"]["id"]
+      assert_equal 1, payload["evidence"]["trace_count"]
+      assert_equal 99, payload["evidence"]["error_ids"].first
+      assert payload["links"]["traces_ui"].include?("name=orders.create")
+    end
+
     test "api token is enforced when configured" do
       previous_token = SolidEvents.configuration.api_token
       SolidEvents.configuration.api_token = "secret123"

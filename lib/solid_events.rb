@@ -148,5 +148,13 @@ module SolidEvents
     def api_token
       configuration.api_token
     end
+
+    def evaluate_incidents_on_request?
+      !!configuration.evaluate_incidents_on_request
+    end
+
+    def canonical_schema_version
+      "1"
+    end
   end
 end

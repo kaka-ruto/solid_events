@@ -56,7 +56,7 @@ module SolidEvents
         .offset((@page - 1) * @per_page)
         .limit(@per_page)
 
-      SolidEvents::IncidentEvaluator.evaluate!
+      SolidEvents::IncidentEvaluator.evaluate! if SolidEvents.evaluate_incidents_on_request?
       load_slo_panel(scope)
       load_index_insights
       load_incidents
