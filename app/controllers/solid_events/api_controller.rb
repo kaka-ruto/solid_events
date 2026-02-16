@@ -6,16 +6,20 @@ module SolidEvents
 
     def incidents
       incidents = if incident_table_available?
-        scope = SolidEvents::Incident.recent
+        scope = SolidEvents::Incident.order(id: :desc)
         scope = scope.where(status: params[:status]) if params[:status].present?
         scope = scope.where(kind: params[:kind]) if params[:kind].present?
         scope = scope.where(severity: params[:severity]) if params[:severity].present?
+        scope = apply_cursor(scope)
         scope.limit(limit_param)
       else
         []
       end
 
-      render json: incidents.map { |incident| serialize_incident(incident) }
+      render json: {
+        data: incidents.map { |incident| serialize_incident(incident) },
+        next_cursor: incidents.last&.id
+      }
     end
 
     def incident_traces
@@ -85,7 +89,7 @@ module SolidEvents
     end
 
     def traces
-      scope = SolidEvents::Trace.recent
+      scope = SolidEvents::Trace.order(id: :desc)
       if params[:error_fingerprint].present?
         scope = scope.left_outer_joins(:summary).where(solid_events_summaries: {error_fingerprint: params[:error_fingerprint]})
       end
@@ -95,8 +99,12 @@ module SolidEvents
         scope = scope.where(solid_events_summaries: {entity_id: params[:entity_id].to_i}) if params[:entity_id].present?
       end
 
+      scope = apply_cursor(scope)
       traces = scope.includes(:summary).limit(limit_param)
-      render json: traces.map { |trace| trace.canonical_event }
+      render json: {
+        data: traces.map { |trace| trace.canonical_event },
+        next_cursor: traces.last&.id
+      }
     end
 
     def error_rates
@@ -335,6 +343,13 @@ module SolidEvents
       [[params[:limit].to_i, 1].max, 200].min
     rescue StandardError
       50
+    end
+
+    def apply_cursor(scope)
+      cursor = params[:cursor].to_i
+      return scope if cursor <= 0
+
+      scope.where("id < ?", cursor)
     end
 
     def authenticate_api!

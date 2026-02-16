@@ -212,6 +212,7 @@ SolidEvents.annotate!(
 The mounted engine includes JSON endpoints for automation/agents:
 
 - `GET /solid_events/api/incidents?status=active&limit=50`
+- `GET /solid_events/api/incidents?status=active&limit=50&cursor=123`
 - `GET /solid_events/api/incidents/:id/traces`
 - `GET /solid_events/api/incidents/:id/context`
 - `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
@@ -223,12 +224,14 @@ with `resolved_by` and `resolution_note`.
 - `GET /solid_events/api/traces/:id`
 - `GET /solid_events/api/traces?error_fingerprint=...`
 - `GET /solid_events/api/traces?entity_type=Order&entity_id=123`
+- `GET /solid_events/api/traces?limit=50&cursor=456`
 - `GET /solid_events/api/metrics/error_rates?dimension=source&window=24h`
 - `GET /solid_events/api/metrics/latency?dimension=deployment_id&window=7d`
 - `GET /solid_events/api/metrics/compare?metric=error_rate&dimension=source&window=24h`
 - `GET /solid_events/api/metrics/cohorts?cohort_key=plan&metric=error_rate&window=24h`
 
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
+List endpoints return `{ data: [...], next_cursor: <id|null> }` for cursor pagination.
 Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.
 
 `context` includes `solid_errors` enrichment when available.

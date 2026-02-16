@@ -19,8 +19,9 @@ module SolidEvents
       get "/solid_events/api/incidents", params: {status: "active"}
       assert_response :success
       payload = JSON.parse(@response.body)
-      assert_equal incident.id, payload.first["id"]
-      assert_equal "error_spike", payload.first["kind"]
+      assert_equal incident.id, payload["data"].first["id"]
+      assert_equal "error_spike", payload["data"].first["kind"]
+      assert_equal incident.id, payload["next_cursor"]
     end
 
     test "trace endpoint returns canonical event and links" do
@@ -65,6 +66,66 @@ module SolidEvents
       payload = JSON.parse(@response.body)
       assert_equal incident.id, payload["incident"]["id"]
       assert_equal trace.id, payload["traces"].first["trace_id"]
+    end
+
+    test "incidents endpoint supports cursor pagination" do
+      older = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "OrdersController#create",
+        name: "orders.create",
+        payload: {},
+        detected_at: 1.minute.ago,
+        last_seen_at: 1.minute.ago
+      )
+      newer = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "CheckoutController#create",
+        name: "checkout.create",
+        payload: {},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      get "/solid_events/api/incidents", params: {limit: 1}
+      payload = JSON.parse(@response.body)
+      first_id = payload.fetch("data").first.fetch("id")
+
+      get "/solid_events/api/incidents", params: {limit: 10, cursor: first_id}
+      second_payload = JSON.parse(@response.body)
+      ids = second_payload.fetch("data").map { |row| row.fetch("id") }
+      assert_includes ids, older.id
+      refute_includes ids, newer.id
+    end
+
+    test "traces endpoint supports cursor pagination" do
+      older = SolidEvents::Trace.create!(
+        name: "orders.create",
+        trace_type: "request",
+        source: "OrdersController#create",
+        status: "ok",
+        started_at: 5.minutes.ago
+      )
+      newer = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "ok",
+        started_at: Time.current
+      )
+
+      get "/solid_events/api/traces", params: {limit: 1}
+      payload = JSON.parse(@response.body)
+      first_id = payload.fetch("data").first.fetch("trace_id")
+
+      get "/solid_events/api/traces", params: {limit: 10, cursor: first_id}
+      second_payload = JSON.parse(@response.body)
+      ids = second_payload.fetch("data").map { |row| row.fetch("trace_id") }
+      assert_includes ids, older.id
+      refute_includes ids, newer.id
     end
 
     test "incident lifecycle endpoints update status" do

@@ -79,7 +79,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Keep APIs observability-only (no automation/executor responsibilities)
 - [x] Provide comparative metrics API for window-over-window regression checks
 - [ ] Versioned/public API contract document with compatibility guarantees
-- [ ] Cursor pagination for large result sets
+- [x] Cursor pagination for large result sets
 - [x] Prebuilt aggregate endpoints (error rates + latency aggregates by key dimensions)
 
 ## 7) Signal quality, noise reduction, and safety
