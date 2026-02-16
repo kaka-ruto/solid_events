@@ -268,6 +268,46 @@ module SolidEvents
       assert_equal "acknowledged", payload["data"].first["action"]
     end
 
+    test "incident evidence slices endpoint returns aggregate evidence" do
+      trace = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "error",
+        started_at: Time.current
+      )
+      SolidEvents::Summary.create!(
+        trace: trace,
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: trace.source,
+        status: trace.status,
+        entity_type: "Order",
+        entity_id: 42,
+        started_at: trace.started_at,
+        duration_ms: 250.0
+      )
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "CheckoutController#create",
+        name: "checkout.create",
+        payload: {"trace_ids" => [trace.id]},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      get "/solid_events/api/incidents/#{incident.id}/evidence_slices"
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal incident.id, payload.dig("incident", "id")
+      assert_equal 100.0, payload.dig("slices", "error_rate_pct")
+      assert_equal 1, payload.dig("slices", "by_source", "CheckoutController#create")
+      assert_equal 250.0, payload.dig("slices", "duration_ms", "max")
+      assert_equal "Order", payload.dig("slices", "by_entity", 0, "entity_type")
+    end
+
     test "api token is enforced when configured" do
       previous_token = SolidEvents.configuration.api_token
       SolidEvents.configuration.api_token = "secret123"

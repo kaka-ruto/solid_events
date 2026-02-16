@@ -113,7 +113,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Stable canonical event payload for machine consumers
 - [x] Incident context endpoint returns evidence + suggested filters
 - [x] Data model separates observability state from automation execution concerns
-- [ ] Additional aggregate/analysis APIs that provide reusable evidence slices (without embedding agent orchestration here)
+- [x] Additional aggregate/analysis APIs that provide reusable evidence slices (without embedding agent orchestration here)
 
 ## 10) Operational readiness
 

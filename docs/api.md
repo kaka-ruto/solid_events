@@ -54,6 +54,9 @@ This document defines the public API contract for `solid_events` engine endpoint
   - Filters: `event_action`, `limit`, `cursor`
   - Response: `{ incident: {...}, data: [incident_event...], next_cursor: Integer|null }`
 
+- `GET /solid_events/api/incidents/:id/evidence_slices`
+  - Response: aggregate slices for source/status/entity, duration stats, and error rate.
+
 - `PATCH /solid_events/api/incidents/:id/acknowledge`
 - `PATCH /solid_events/api/incidents/:id/resolve`
   - Optional body params: `resolved_by`, `resolution_note`
@@ -62,6 +65,13 @@ This document defines the public API contract for `solid_events` engine endpoint
   - Params: `owner`, `team`, `assigned_by`, `assignment_note`
 - `PATCH /solid_events/api/incidents/:id/mute`
   - Params: `minutes`
+
+Incident kinds currently emitted by built-in evaluators:
+- `new_fingerprint`
+- `error_spike`
+- `p95_regression`
+- `slo_burn_rate`
+- `multi_signal_degradation`
 
 ### Traces
 

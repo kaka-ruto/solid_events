@@ -48,6 +48,33 @@ module SolidEvents
       }
     end
 
+    def incident_evidence_slices
+      incident = SolidEvents::Incident.find(params[:id])
+      traces = incident_related_traces(incident).includes(:summary).limit(2_000)
+      summaries = traces.map(&:summary).compact
+
+      by_source = summaries.group_by(&:source).transform_values(&:size).sort_by { |_, count| -count }.first(10).to_h
+      by_status = summaries.group_by(&:status).transform_values(&:size)
+      by_entity = summaries
+        .map { |summary| [summary.entity_type, summary.entity_id] }
+        .reject { |type, id| type.blank? || id.blank? }
+        .tally
+        .sort_by { |(_, count)| -count }
+        .first(10)
+        .map { |(type, id), count| {entity_type: type, entity_id: id, count: count} }
+
+      render json: {
+        incident: serialize_incident(incident),
+        slices: {
+          by_source: by_source,
+          by_status: by_status,
+          by_entity: by_entity,
+          duration_ms: duration_slice_for(summaries),
+          error_rate_pct: error_rate_for(summaries)
+        }
+      }
+    end
+
     def acknowledge_incident
       incident = SolidEvents::Incident.find(params[:id])
       incident.acknowledge!
@@ -627,6 +654,27 @@ module SolidEvents
         "status", "kind", "severity", "error_fingerprint", "entity_type", "entity_id",
         "feature_key", "feature_value", "window", "request_id", "errors_only", "limit", "cursor", "format"
       )
+    end
+
+    def duration_slice_for(summaries)
+      durations = summaries.map(&:duration_ms).compact
+      return {avg: 0.0, max: 0.0, p95: 0.0, sample_count: 0} if durations.empty?
+
+      sorted = durations.sort
+      index = (0.95 * (sorted.length - 1)).ceil
+      {
+        avg: (durations.sum.to_f / durations.length).round(2),
+        max: sorted.last.to_f.round(2),
+        p95: sorted[index].to_f.round(2),
+        sample_count: sorted.length
+      }
+    end
+
+    def error_rate_for(summaries)
+      return 0.0 if summaries.empty?
+
+      errors = summaries.count { |summary| summary.status == "error" }
+      ((errors.to_f / summaries.size) * 100.0).round(2)
     end
 
     def default_metric_stats
