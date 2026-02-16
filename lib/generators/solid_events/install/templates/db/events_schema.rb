@@ -107,6 +107,8 @@ ActiveRecord::Schema[7.1].define do
     t.string :status, null: false, default: "active"
     t.string :owner
     t.string :team
+    t.string :assigned_by
+    t.text :assignment_note
     t.datetime :assigned_at
     t.string :resolved_by
     t.text :resolution_note
@@ -127,6 +129,7 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_incidents, :status
   add_index :solid_events_incidents, :owner
   add_index :solid_events_incidents, :team
+  add_index :solid_events_incidents, :assigned_by
   add_index :solid_events_incidents, :assigned_at
   add_index :solid_events_incidents, :source
   add_index :solid_events_incidents, :name

@@ -40,7 +40,12 @@ module SolidEvents
 
     def assign_incident
       incident = SolidEvents::Incident.find(params[:id])
-      incident.assign!(owner: params[:owner].presence, team: params[:team].presence)
+      incident.assign!(
+        owner: params[:owner].presence,
+        team: params[:team].presence,
+        assigned_by: params[:assigned_by].presence,
+        assignment_note: params[:assignment_note].presence
+      )
       render json: serialize_incident(incident)
     end
 
@@ -123,6 +128,8 @@ module SolidEvents
         status: incident.status,
         owner: incident.owner,
         team: incident.team,
+        assigned_by: incident.assigned_by,
+        assignment_note: incident.assignment_note,
         assigned_at: incident.assigned_at,
         source: incident.source,
         name: incident.name,
@@ -153,13 +160,24 @@ module SolidEvents
     end
 
     def suggested_commands_for(incident:)
-      commands = []
+      base_commands = []
       if incident.source.to_s.include?("#")
         controller = incident.source.to_s.split("#").first.underscore
-        commands << "bin/rails test test/controllers/#{controller}_test.rb"
+        base_commands << "bin/rails test test/controllers/#{controller}_test.rb"
       end
-      commands << "bin/rails test"
-      commands
+
+      preset = case incident.kind.to_s
+      when "new_fingerprint"
+        ["bin/rails test", "bin/rails test:system"]
+      when "error_spike"
+        ["bin/rails test", "bin/rubocop"]
+      when "p95_regression"
+        ["bin/rails test", "bin/rails test test/performance"]
+      else
+        ["bin/rails test"]
+      end
+
+      (base_commands + preset).uniq
     end
 
     def context_payload_for(incident)
@@ -269,11 +287,17 @@ module SolidEvents
 
       errors = SolidErrors::Error.where(id: error_ids)
       errors.map do |error|
+        occurrences_count = if error.respond_to?(:occurrences)
+          error.occurrences.count
+        else
+          nil
+        end
         {
           id: error.id,
           exception_class: error.try(:exception_class),
-          message: error.try(:message),
-          fingerprint: error.try(:fingerprint)
+          message: error.try(:message).to_s.first(200),
+          fingerprint: error.try(:fingerprint),
+          occurrences_count: occurrences_count
         }
       end
     rescue StandardError

@@ -29,8 +29,14 @@ module SolidEvents
       update!(muted_until: duration.from_now)
     end
 
-    def assign!(owner:, team: nil)
-      update!(owner: owner, team: team, assigned_at: Time.current)
+    def assign!(owner:, team: nil, assigned_by: nil, assignment_note: nil)
+      update!(
+        owner: owner,
+        team: team,
+        assigned_by: assigned_by,
+        assignment_note: assignment_note,
+        assigned_at: Time.current
+      )
     end
 
     def resolve_with!(resolved_by:, resolution_note: nil)

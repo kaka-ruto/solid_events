@@ -91,10 +91,12 @@ module SolidEvents
       assert_response :success
       assert_equal "active", incident.reload.status
 
-      patch "/solid_events/api/incidents/#{incident.id}/assign", params: {owner: "alice", team: "platform"}
+      patch "/solid_events/api/incidents/#{incident.id}/assign", params: {owner: "alice", team: "platform", assigned_by: "bot", assignment_note: "primary oncall"}
       assert_response :success
       assert_equal "alice", incident.reload.owner
       assert_equal "platform", incident.reload.team
+      assert_equal "bot", incident.assigned_by
+      assert_equal "primary oncall", incident.assignment_note
       assert_not_nil incident.assigned_at
 
       patch "/solid_events/api/incidents/#{incident.id}/mute", params: {minutes: 30}
@@ -162,6 +164,7 @@ module SolidEvents
       assert_equal incident.id, payload["incident"]["id"]
       assert payload["run_sequence"].any?
       assert payload["suggested_commands"].any?
+      assert_includes payload["suggested_commands"], "bin/rubocop"
     end
 
     test "incident handoff combines context and commands" do

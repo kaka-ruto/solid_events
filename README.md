@@ -205,7 +205,7 @@ The mounted engine includes JSON endpoints for automation/agents:
 - `GET /solid_events/api/incidents/:id/commands`
 - `GET /solid_events/api/incidents/:id/handoff`
 - `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
-- `PATCH /solid_events/api/incidents/:id/assign` (`owner`, `team`)
+- `PATCH /solid_events/api/incidents/:id/assign` (`owner`, `team`, `assigned_by`, `assignment_note`)
 - `PATCH /solid_events/api/incidents/:id/mute` (`minutes`)
 
 Resolution metadata is supported via `PATCH /solid_events/api/incidents/:id/resolve`
@@ -218,6 +218,7 @@ Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-
 Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.
 
 `context` and `commands` are split endpoints; `handoff` returns both in one response.
+`context` includes `solid_errors` enrichment when available, and `commands` are incident-kind aware.
 
 ### Scheduling (Production)
 
