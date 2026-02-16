@@ -247,6 +247,8 @@ Set `config.evaluate_incidents_on_request = false` in production if you only wan
 
 `context` includes `solid_errors` enrichment when available.
 
+API contract and versioning details: `docs/api.md`.
+
 ### Scheduling (Production)
 
 To avoid relying on dashboard traffic, schedule these:

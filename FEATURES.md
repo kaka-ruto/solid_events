@@ -78,7 +78,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Support API token auth for `/solid_events/api/*`
 - [x] Keep APIs observability-only (no automation/executor responsibilities)
 - [x] Provide comparative metrics API for window-over-window regression checks
-- [ ] Versioned/public API contract document with compatibility guarantees
+- [x] Versioned/public API contract document with compatibility guarantees
 - [x] Cursor pagination for large result sets
 - [x] Prebuilt aggregate endpoints (error rates + latency aggregates by key dimensions)
 
