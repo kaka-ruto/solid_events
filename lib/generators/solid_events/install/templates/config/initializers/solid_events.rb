@@ -10,5 +10,12 @@ SolidEvents.configure do |config|
   # - config.allow_sql_tables << "noticed_notifications"
   # - config.allow_sql_fragments << "active_storage_"
   # - config.allow_job_prefixes << "job.active_storage"
+  # Tail sampling keeps errors and slow traces, and samples the rest.
+  # config.sample_rate = 0.2
+  # config.tail_sample_slow_ms = 1000
+  # config.always_sample_context_keys = ["release", "request_id"]
+  # config.always_sample_when = ->(trace:, context:, duration_ms:) { context["tenant_id"].present? }
+  # Emit one canonical JSON log line per sampled trace.
+  # config.emit_canonical_log_line = true
   config.retention_period = 30.days
 end

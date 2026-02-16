@@ -39,6 +39,7 @@ Stop renting your data.
 - **🤖 Auto-Labeling:** Intelligently maps controller actions to business terms (e.g., `OrdersController#create` becomes `order.created`).
 - **👤 Context Scraping:** Automatically detects `current_user`, `current_account`, or `tenant_id` from your controllers and tags the trace.
 - **📊 Canonical Wide Events:** Maintains one summary row per trace with outcome, entity, HTTP, timing, and correlation fields for fast filtering.
+- **🎯 Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -132,6 +133,35 @@ SolidEvents.configure do |config|
   # 5. Retention Policy
   # Auto-delete logs older than 30 days
   config.retention_period = 30.days
+
+  # 6. Tail Sampling (canonical wide-event style)
+  # Keep all errors/slow traces, sample the rest.
+  config.sample_rate = 0.2
+  config.tail_sample_slow_ms = 1000
+  config.always_sample_context_keys = ["release", "request_id"]
+  config.always_sample_when = ->(trace:, context:, duration_ms:) { context["tenant_id"].present? }
+
+  # 7. Emit one JSON line per sampled trace
+  config.emit_canonical_log_line = true
+end
+```
+
+### Replacing Rails Default Logs
+
+`SolidEvents` emits one canonical JSON line per sampled trace, which is enough to replace default multi-line request logs.
+
+```ruby
+# config/environments/production.rb
+config.log_tags = []
+config.log_level = :info
+```
+
+```ruby
+# config/initializers/disable_default_rails_logs.rb
+ActiveSupport::LogSubscriber.log_subscribers.each do |subscriber|
+  if subscriber.is_a?(ActionController::LogSubscriber) || subscriber.is_a?(ActiveRecord::LogSubscriber)
+    subscriber.class.detach_from(subscriber.namespace)
+  end
 end
 ```
 

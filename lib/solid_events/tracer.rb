@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 require "digest"
+require "json"
+require "time"
 
 module SolidEvents
   module Tracer
@@ -31,8 +33,17 @@ module SolidEvents
 
       existing_context = normalize_context(trace.context.to_h)
       extra_context = normalize_context(context)
-      trace.update!(status: status, finished_at: Time.current, context: existing_context.merge(extra_context))
+      final_context = existing_context.merge(extra_context)
+      trace.update!(status: status, finished_at: Time.current, context: final_context)
+
+      unless keep_trace?(trace, context: final_context)
+        trace.destroy!
+        SolidEvents::Current.trace = nil
+        return nil
+      end
+
       upsert_summary!(trace)
+      emit_canonical_log_line!(trace)
       SolidEvents::Current.trace = nil
       trace
     end
@@ -242,6 +253,46 @@ module SolidEvents
       )
       summary.save!
       summary
+    rescue StandardError
+      nil
+    end
+
+    def keep_trace?(trace, context:)
+      duration_ms = if trace.finished_at && trace.started_at
+        ((trace.finished_at - trace.started_at) * 1000.0).round(2)
+      end
+
+      status_code = context["status"].to_i if context.key?("status")
+      return true if trace.status == "error"
+      return true if status_code && status_code >= 500
+      return true if duration_ms && duration_ms >= SolidEvents.tail_sample_slow_ms
+
+      always_sample_key_hit = SolidEvents.always_sample_context_keys.any? do |key|
+        value = context[key]
+        value.present? && value != false
+      end
+      return true if always_sample_key_hit
+
+      if SolidEvents.always_sample_when.respond_to?(:call)
+        return true if SolidEvents.always_sample_when.call(trace: trace, context: context, duration_ms: duration_ms)
+      end
+
+      sample_rate = SolidEvents.sample_rate.clamp(0.0, 1.0)
+      return true if sample_rate >= 1.0
+      return false if sample_rate <= 0.0
+
+      rand < sample_rate
+    rescue StandardError
+      true
+    end
+
+    def emit_canonical_log_line!(trace)
+      return unless SolidEvents.emit_canonical_log_line?
+      return unless defined?(Rails) && Rails.logger
+
+      payload = trace.canonical_event
+      payload[:emitted_at] = Time.current.iso8601
+      Rails.logger.info(payload.to_json)
     rescue StandardError
       nil
     end

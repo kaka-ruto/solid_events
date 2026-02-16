@@ -51,5 +51,14 @@ module SolidEvents
       ignored_after_allow = configuration.effective_ignore_sql_tables(present_tables)
       refute_includes ignored_after_allow, "noticed_notifications"
     end
+
+    test "tail sampling defaults are configured" do
+      configuration = SolidEvents::Configuration.new
+
+      assert_equal 1.0, configuration.sample_rate
+      assert_equal 2000.0, configuration.tail_sample_slow_ms
+      assert_equal [], configuration.always_sample_context_keys
+      assert_equal true, configuration.emit_canonical_log_line
+    end
   end
 end

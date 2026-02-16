@@ -52,5 +52,25 @@ module SolidEvents
     def ignore_controller_prefixes
       Array(configuration.effective_ignore_controller_prefixes)
     end
+
+    def sample_rate
+      configuration.sample_rate.to_f
+    end
+
+    def tail_sample_slow_ms
+      configuration.tail_sample_slow_ms.to_f
+    end
+
+    def always_sample_context_keys
+      Array(configuration.always_sample_context_keys).map(&:to_s)
+    end
+
+    def always_sample_when
+      configuration.always_sample_when
+    end
+
+    def emit_canonical_log_line?
+      !!configuration.emit_canonical_log_line
+    end
   end
 end

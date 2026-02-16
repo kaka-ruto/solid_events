@@ -2,12 +2,25 @@
 
 require "test_helper"
 require "digest"
+require "json"
 
 class ::LinkedOrderRecord
   attr_reader :id
 
   def initialize(id)
     @id = id
+  end
+end
+
+class ::TestLogger
+  attr_reader :lines
+
+  def initialize
+    @lines = []
+  end
+
+  def info(message)
+    @lines << message
   end
 end
 
@@ -183,6 +196,55 @@ module SolidEvents
       )
 
       assert_equal expected, fingerprint
+    end
+
+    test "tail sampling drops fast success traces when sample rate is zero" do
+      previous_sample_rate = SolidEvents.configuration.sample_rate
+      previous_slow_ms = SolidEvents.configuration.tail_sample_slow_ms
+      SolidEvents.configuration.sample_rate = 0.0
+      SolidEvents.configuration.tail_sample_slow_ms = 999_999
+
+      SolidEvents::Tracer.start_trace!(name: "sampled.out", trace_type: "request", source: "x")
+      SolidEvents::Tracer.record_event!(event_type: "sql", name: "SELECT", payload: {sql: "select 1"}, duration_ms: 1.0)
+      result = SolidEvents::Tracer.finish_trace!(status: "ok", context: {status: 200})
+
+      assert_nil result
+      assert_equal 0, SolidEvents::Trace.count
+      assert_equal 0, SolidEvents::Event.count
+    ensure
+      SolidEvents.configuration.sample_rate = previous_sample_rate
+      SolidEvents.configuration.tail_sample_slow_ms = previous_slow_ms
+    end
+
+    test "tail sampling always keeps error traces even when sample rate is zero" do
+      previous_sample_rate = SolidEvents.configuration.sample_rate
+      SolidEvents.configuration.sample_rate = 0.0
+
+      trace = SolidEvents::Tracer.start_trace!(name: "failed.trace", trace_type: "request", source: "x")
+      SolidEvents::Tracer.finish_trace!(status: "error", context: {status: 500})
+
+      assert_equal trace.id, SolidEvents::Trace.last.id
+    ensure
+      SolidEvents.configuration.sample_rate = previous_sample_rate
+    end
+
+    test "emits one canonical json line when trace is persisted" do
+      previous_logger = Rails.logger
+      previous_emit = SolidEvents.configuration.emit_canonical_log_line
+      logger = ::TestLogger.new
+      Rails.logger = logger
+      SolidEvents.configuration.emit_canonical_log_line = true
+
+      SolidEvents::Tracer.start_trace!(name: "logged.trace", trace_type: "request", source: "x")
+      SolidEvents::Tracer.finish_trace!(status: "ok", context: {status: 200})
+
+      assert_equal 1, logger.lines.length
+      payload = JSON.parse(logger.lines.first)
+      assert_equal "logged.trace", payload["name"]
+      assert_equal "ok", payload["status"]
+    ensure
+      Rails.logger = previous_logger
+      SolidEvents.configuration.emit_canonical_log_line = previous_emit
     end
   end
 end
