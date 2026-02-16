@@ -134,7 +134,12 @@ module SolidEvents
           kind: "trace",
           label: "#{trace.name} (#{trace.status})",
           trace_id: trace.id,
-          details: trace.source
+          details: trace.source,
+          explain: {
+            trace_id: trace.id,
+            source: trace.source,
+            status: trace.status
+          }
         }]
         events = trace.events.order(:occurred_at).map do |event|
           {
@@ -142,7 +147,13 @@ module SolidEvents
             kind: event.event_type,
             label: event.name,
             trace_id: trace.id,
-            details: event.duration_ms ? "#{event.duration_ms} ms" : nil
+            details: event.duration_ms ? "#{event.duration_ms} ms" : nil,
+            explain: {
+              trace_id: trace.id,
+              event_type: event.event_type,
+              duration_ms: event.duration_ms,
+              payload: event.payload.to_h
+            }
           }
         end
         base + events
@@ -700,7 +711,13 @@ module SolidEvents
           kind: "incident",
           label: "incident #{event.action}: #{incident.kind}",
           trace_id: nil,
-          details: "status=#{incident.status} severity=#{incident.severity} id=#{incident.id} actor=#{event.actor.presence || 'system'}#{change_text}"
+          details: "status=#{incident.status} severity=#{incident.severity} id=#{incident.id} actor=#{event.actor.presence || 'system'}#{change_text}",
+          explain: {
+            incident_id: incident.id,
+            action: event.action,
+            actor: event.actor.presence || "system",
+            payload: event.payload.to_h
+          }
         }
       end
     end

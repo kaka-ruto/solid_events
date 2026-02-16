@@ -6,6 +6,7 @@ This baseline defines the initial query-performance targets for local/prod sanit
 
 ```bash
 bundle exec rake "solid_events:benchmark[200]"
+bundle exec rake "solid_events:benchmark_check[200,150,250]"
 ```
 
 ## Initial targets

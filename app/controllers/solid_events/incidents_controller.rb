@@ -4,6 +4,16 @@ module SolidEvents
   class IncidentsController < ApplicationController
     before_action :set_incident
 
+    def events
+      @event_action = params[:event_action].to_s
+      @cursor = params[:cursor].to_i
+      @events = @incident.incident_events.recent
+      @events = @events.where(action: @event_action) if @event_action.present?
+      @events = @events.where("id < ?", @cursor) if @cursor.positive?
+      @events = @events.limit(50)
+      @next_cursor = @events.last&.id
+    end
+
     def acknowledge
       @incident.acknowledge!
       redirect_back fallback_location: traces_path

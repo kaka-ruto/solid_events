@@ -274,7 +274,12 @@ Run a lightweight query benchmark:
 
 ```bash
 bundle exec rake "solid_events:benchmark[200]"
+bundle exec rake "solid_events:benchmark_check[200,150,250]"
 ```
+
+Inspect incident lifecycle history in UI:
+
+- `/solid_events/incidents/:id/events`
 
 ### Scheduling (Production)
 

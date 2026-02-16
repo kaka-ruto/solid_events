@@ -24,6 +24,7 @@ SolidEvents::Engine.routes.draw do
   resources :saved_views, only: %i[create destroy]
   resources :incidents, only: [] do
     member do
+      get :events
       patch :acknowledge
       patch :resolve
       patch :reopen

@@ -21,5 +21,23 @@ module SolidEvents
         generated_at: Time.current.iso8601
       }
     end
+
+    def self.evaluate(result:, warn_ms:, fail_ms:)
+      elapsed = result[:elapsed_ms].to_f
+      status = if elapsed > fail_ms.to_f
+        "fail"
+      elsif elapsed > warn_ms.to_f
+        "warn"
+      else
+        "pass"
+      end
+
+      {
+        status: status,
+        elapsed_ms: elapsed,
+        warn_ms: warn_ms.to_f,
+        fail_ms: fail_ms.to_f
+      }
+    end
   end
 end

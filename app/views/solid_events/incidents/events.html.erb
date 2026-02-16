@@ -1,0 +1,60 @@
+<div class="card">
+  <div class="trace-header">
+    <h2>Incident #<%= @incident.id %> Events</h2>
+    <%= link_to "Back to Traces", traces_path, class: "button button-muted" %>
+  </div>
+  <p>
+    Kind: <strong><%= @incident.kind %></strong> |
+    Status: <strong><%= @incident.status %></strong> |
+    Source: <strong><%= @incident.source %></strong>
+  </p>
+</div>
+
+<div class="card">
+  <%= form_with url: events_incident_path(@incident), method: :get, local: true do |f| %>
+    <div class="filters-grid">
+      <div>
+        <%= f.label :event_action, "Action" %>
+        <%= f.text_field :event_action, value: @event_action, placeholder: "e.g. acknowledged" %>
+      </div>
+    </div>
+    <div class="actions">
+      <%= f.submit "Filter" %>
+      <%= link_to "Reset", events_incident_path(@incident), class: "button button-muted" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>At</th>
+          <th>Action</th>
+          <th>Actor</th>
+          <th>Payload</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @events.each do |event| %>
+          <tr>
+            <td title="<%= absolute_time(event.occurred_at) %>"><%= relative_time(event.occurred_at) %></td>
+            <td><%= event.action %></td>
+            <td><%= event.actor.presence || "system" %></td>
+            <td><%= event.payload.to_h.to_json %></td>
+          </tr>
+        <% end %>
+        <% if @events.empty? %>
+          <tr><td colspan="4" class="muted">No incident events found.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="pagination">
+  <% if @next_cursor.present? %>
+    <%= link_to "Next", events_incident_path(@incident, cursor: @next_cursor, event_action: @event_action.presence), class: "button button-muted" %>
+  <% end %>
+</div>

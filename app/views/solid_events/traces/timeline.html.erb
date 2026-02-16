@@ -20,6 +20,7 @@
           <th>Label</th>
           <th>Trace</th>
           <th>Details</th>
+          <th>Explain</th>
         </tr>
       </thead>
       <tbody>
@@ -36,10 +37,16 @@
               <% end %>
             </td>
             <td><%= row[:details].presence || "n/a" %></td>
+            <td>
+              <details>
+                <summary>Explain</summary>
+                <pre><%= JSON.pretty_generate(row[:explain].to_h) %></pre>
+              </details>
+            </td>
           </tr>
         <% end %>
         <% if @timeline_rows.empty? %>
-          <tr><td colspan="5" class="muted">No timeline data for this query and window.</td></tr>
+          <tr><td colspan="6" class="muted">No timeline data for this query and window.</td></tr>
         <% end %>
       </tbody>
     </table>

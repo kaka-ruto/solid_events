@@ -30,5 +30,29 @@ module SolidEvents
       assert_equal "active", incident.reload.status
       assert_nil incident.resolved_at
     end
+
+    test "events page lists lifecycle events with filtering" do
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "OrdersController#create",
+        name: "orders.create",
+        payload: {},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+      incident.record_event!(action: "detected")
+      incident.acknowledge!
+
+      get "/solid_events/incidents/#{incident.id}/events"
+      assert_response :success
+      assert_includes @response.body, "Incident ##{incident.id} Events"
+      assert_includes @response.body, "acknowledged"
+
+      get "/solid_events/incidents/#{incident.id}/events", params: {event_action: "detected"}
+      assert_response :success
+      assert_includes @response.body, "detected"
+    end
   end
 end

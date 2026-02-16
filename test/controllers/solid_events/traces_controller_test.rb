@@ -116,6 +116,7 @@ module SolidEvents
       assert_response :success
       assert_includes @response.body, "Timeline View"
       assert_includes @response.body, "OrdersController#create"
+      assert_includes @response.body, "Explain"
     end
 
     test "saved views are listed on the traces index" do

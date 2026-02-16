@@ -98,6 +98,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Trace index with rich filters and pagination
 - [x] Trace show page with canonical event, context, waterfall, record links, error links
 - [x] Incident feed with lifecycle actions
+- [x] Dedicated incident lifecycle history page in UI
 - [x] Hot-path drilldown with percentile/error buckets
 - [x] Journey sequences panel with request/entity grouping and quick links
 - [x] Journey views support failing-only mode for focused incident triage

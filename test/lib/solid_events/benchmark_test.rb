@@ -39,5 +39,15 @@ module SolidEvents
       assert_equal 1, result[:summaries_count]
       assert_equal 1, result[:incidents_count]
     end
+
+    test "evaluate returns pass warn and fail states" do
+      pass = SolidEvents::Benchmark.evaluate(result: {elapsed_ms: 90}, warn_ms: 120, fail_ms: 200)
+      warn = SolidEvents::Benchmark.evaluate(result: {elapsed_ms: 150}, warn_ms: 120, fail_ms: 200)
+      fail_result = SolidEvents::Benchmark.evaluate(result: {elapsed_ms: 250}, warn_ms: 120, fail_ms: 200)
+
+      assert_equal "pass", pass[:status]
+      assert_equal "warn", warn[:status]
+      assert_equal "fail", fail_result[:status]
+    end
   end
 end

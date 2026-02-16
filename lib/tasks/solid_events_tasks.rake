@@ -16,4 +16,16 @@ namespace :solid_events do
     result = SolidEvents::Benchmark.run(sample_size: args[:sample_size] || 200)
     puts result.to_json
   end
+
+  desc "Run benchmark and enforce warn/fail thresholds in ms"
+  task :benchmark_check, [:sample_size, :warn_ms, :fail_ms] => :environment do |_task, args|
+    result = SolidEvents::Benchmark.run(sample_size: args[:sample_size] || 200)
+    evaluation = SolidEvents::Benchmark.evaluate(
+      result: result,
+      warn_ms: args[:warn_ms] || 150,
+      fail_ms: args[:fail_ms] || 250
+    )
+    puts result.merge(evaluation: evaluation).to_json
+    abort("solid_events benchmark failed threshold") if evaluation[:status] == "fail"
+  end
 end

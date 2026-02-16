@@ -332,6 +332,7 @@
               <% else %>
                 <span class="muted">no events</span>
               <% end %>
+              <div><%= link_to "View all", events_incident_path(incident), class: "button button-muted" %></div>
               <div><%= link_to "API", "/solid_events/api/incidents/#{incident.id}/events", class: "button button-muted" %></div>
             </td>
             <td>
