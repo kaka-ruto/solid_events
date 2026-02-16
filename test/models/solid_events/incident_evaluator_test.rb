@@ -138,5 +138,23 @@ module SolidEvents
     ensure
       SolidEvents.configuration.incident_notifier = previous_notifier
     end
+
+    test "stale active incidents are auto-resolved" do
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "OrdersController#create",
+        name: "orders.create",
+        detected_at: 3.hours.ago,
+        last_seen_at: 3.hours.ago,
+        payload: {error_rate_pct: 30.0}
+      )
+
+      SolidEvents::IncidentEvaluator.evaluate!
+
+      assert_equal "resolved", incident.reload.status
+      assert_not_nil incident.resolved_at
+    end
   end
 end

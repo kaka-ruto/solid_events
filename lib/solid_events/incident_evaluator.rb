@@ -9,6 +9,7 @@ module SolidEvents
         detect_new_fingerprints!
         detect_error_spikes!
         detect_p95_regressions!
+        resolve_recovered_incidents!
       rescue StandardError
         nil
       end
@@ -43,7 +44,12 @@ module SolidEvents
             source: summary.source,
             name: summary.name,
             fingerprint: summary.error_fingerprint,
-            payload: {trace_id: summary.trace_id}
+            payload: {
+              trace_id: summary.trace_id,
+              first_seen_at: summary.started_at,
+              detected_window: "last_1h",
+              evidence: "fingerprint not present in previous 14d"
+            }
           )
         end
       end
@@ -63,7 +69,9 @@ module SolidEvents
             name: name,
             payload: {
               error_rate_pct: error_rate.round(2),
-              sample_size: rows.size
+              sample_size: rows.size,
+              threshold_pct: SolidEvents.incident_error_spike_threshold_pct,
+              window: "24h"
             }
           )
         end
@@ -94,9 +102,19 @@ module SolidEvents
             payload: {
               recent_p95_ms: recent_p95,
               baseline_p95_ms: baseline_p95,
-              factor: (recent_p95 / baseline_p95).round(2)
+              factor: (recent_p95 / baseline_p95).round(2),
+              threshold_factor: SolidEvents.incident_p95_regression_factor,
+              recent_window: "last_1h",
+              baseline_window: "last_7d_excluding_1h"
             }
           )
+        end
+      end
+
+      def resolve_recovered_incidents!
+        active = SolidEvents::Incident.where(status: %w[active acknowledged]).where("last_seen_at < ?", 2.hours.ago)
+        active.find_each do |incident|
+          incident.resolve!
         end
       end
 

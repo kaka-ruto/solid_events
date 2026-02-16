@@ -44,6 +44,7 @@ Stop renting your data.
 - **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
 - **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
 - **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
+- **🤖 Agent APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -191,6 +192,15 @@ SolidEvents.annotate!(
   checkout_experiment: "checkout_v3"
 )
 ```
+
+### Agent-Friendly APIs
+
+The mounted engine includes JSON endpoints for automation/agents:
+
+- `GET /solid_events/api/incidents?status=active&limit=50`
+- `GET /solid_events/api/traces/:id`
+- `GET /solid_events/api/traces?error_fingerprint=...`
+- `GET /solid_events/api/traces?entity_type=Order&entity_id=123`
 
 ---
 

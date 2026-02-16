@@ -2,6 +2,9 @@
 
 SolidEvents::Engine.routes.draw do
   get "hot_path", to: "traces#hot_path"
+  get "api/incidents", to: "api#incidents"
+  get "api/traces/:id", to: "api#trace", as: :api_trace
+  get "api/traces", to: "api#traces"
   resources :incidents, only: [] do
     member do
       patch :acknowledge
