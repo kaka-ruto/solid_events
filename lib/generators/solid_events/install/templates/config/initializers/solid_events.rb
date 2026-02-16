@@ -45,5 +45,8 @@ SolidEvents.configure do |config|
   # Rake equivalents:
   # - bin/rails solid_events:evaluate_incidents
   # - bin/rails solid_events:prune
+  # Example cron:
+  # */5 * * * * cd /app && bin/rails solid_events:evaluate_incidents RAILS_ENV=production
+  # 15 2 * * * cd /app && bin/rails solid_events:prune RAILS_ENV=production
   config.retention_period = 30.days
 end

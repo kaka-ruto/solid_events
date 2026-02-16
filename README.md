@@ -219,6 +219,38 @@ Rake alternatives (cron-friendly):
 - `bin/rails solid_events:evaluate_incidents`
 - `bin/rails solid_events:prune`
 
+Example cron entries:
+
+```cron
+*/5 * * * * cd /app && bin/rails solid_events:evaluate_incidents RAILS_ENV=production
+15 2 * * * cd /app && bin/rails solid_events:prune RAILS_ENV=production
+```
+
+Example `config/recurring.yml` (Solid Queue):
+
+```yaml
+production:
+  evaluate_solid_events_incidents:
+    class: "SolidEvents::EvaluateIncidentsJob"
+    schedule: "every 5 minutes"
+  prune_solid_events:
+    class: "SolidEvents::PruneJob"
+    schedule: "every day at 2:15am"
+```
+
+### Incident Response Runbook
+
+Minimal flow your team/agents can automate:
+
+1. `GET /solid_events/api/incidents?status=active`
+2. For each incident: `GET /solid_events/api/incidents/:id/traces`
+3. Execute fix workflow from canonical trace context.
+4. Mark state with:
+   - `PATCH /solid_events/api/incidents/:id/acknowledge`
+   - `PATCH /solid_events/api/incidents/:id/resolve`
+
+This gives a full closed-loop process without depending on raw Rails logs.
+
 ---
 
 ## 🕵️‍♀️ The Dashboard (Mission Control)
