@@ -160,8 +160,7 @@ module SolidEvents
       trace = current_trace
       return unless trace
 
-      trace.error_links.find_or_create_by!(solid_error_id: solid_error_id)
-      upsert_summary!(trace)
+      attach_error_link!(trace, solid_error_id)
     end
 
     def bind_exception_to_trace!(exception, trace: current_trace)
@@ -231,7 +230,7 @@ module SolidEvents
       if fingerprint.present?
         by_fingerprint = SolidErrors::Error.find_by(fingerprint: fingerprint)
         if by_fingerprint
-          trace.error_links.find_or_create_by!(solid_error_id: by_fingerprint.id)
+          attach_error_link!(trace, by_fingerprint.id)
           return by_fingerprint
         end
       end
@@ -240,7 +239,7 @@ module SolidEvents
       if candidates.empty?
         by_occurrence = find_solid_error_by_occurrence(trace)
         if by_occurrence
-          trace.error_links.find_or_create_by!(solid_error_id: by_occurrence.id)
+          attach_error_link!(trace, by_occurrence.id)
           return by_occurrence
         end
         return
@@ -250,7 +249,7 @@ module SolidEvents
         solid_error = find_matching_solid_error(candidates: candidates, trace: trace)
 
         if solid_error
-          trace.error_links.find_or_create_by!(solid_error_id: solid_error.id)
+          attach_error_link!(trace, solid_error.id)
           return solid_error
         end
 
@@ -282,6 +281,13 @@ module SolidEvents
       return {} unless context.respond_to?(:to_h)
 
       context.to_h.transform_keys(&:to_s)
+    end
+
+    def attach_error_link!(trace, solid_error_id)
+      return unless trace && solid_error_id
+
+      trace.error_links.find_or_create_by!(solid_error_id: solid_error_id)
+      upsert_summary!(trace)
     end
 
     def sanitize_exception_message(message)
@@ -318,13 +324,16 @@ module SolidEvents
     end
 
     def summary_storage_available?
-      return @summary_storage_available unless @summary_storage_available.nil?
+      return true if @summary_storage_available
 
-      @summary_storage_available = begin
+      available = begin
         SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
       rescue StandardError
         false
       end
+
+      @summary_storage_available = true if available
+      available
     end
 
     def upsert_summary!(trace)

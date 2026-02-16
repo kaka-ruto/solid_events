@@ -85,7 +85,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 
 ## 7) Signal quality, noise reduction, and safety
 
-- [x] Ignore noisy internal namespaces by default (solid_*, ActiveStorage, etc.)
+- [x] Ignore noisy internal namespaces by default (solid\_\*, ActiveStorage, etc.)
 - [x] Allow override/re-enable through allowlists
 - [x] Tail sampling (always keep failures/slow traces, sample low-value success traffic)
 - [x] Redact sensitive keys in context/payload before persistence/log emission
@@ -124,11 +124,3 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Migration guide for teams replacing default log-centric workflows
 
 ---
-
-## Current focus
-
-To align with the “Rails can already answer these questions” goal, the next major gap is:
-
-1. Add percentile and error-rate rollups directly on materialized journeys for fast dashboarding
-2. Provide retention and prune policies for journey and causal-edge tables
-3. Add explainability UI pages for causal-edge graph exploration and state-diff timelines

@@ -6,3 +6,4 @@ tmp/
 # Test artifacts
 /test/dummy/log/*.log
 /test/dummy/test/dummy/storage/*.sqlite3
+/test/dummy/storage/*.sqlite3

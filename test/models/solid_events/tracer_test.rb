@@ -292,6 +292,7 @@ module SolidEvents
 
       assert_equal 1, trace.reload.error_links.count
       assert_equal 42, trace.error_links.first.solid_error_id
+      assert_equal 1, trace.summary.error_count
     ensure
       SolidErrors::Error.records = []
     end
@@ -321,8 +322,47 @@ module SolidEvents
 
       assert_equal 1, trace.reload.error_links.count
       assert_equal 77, trace.error_links.first.solid_error_id
+      assert_equal 1, trace.summary.error_count
     ensure
       SolidErrors::Error.records = []
+    end
+
+    test "summary storage availability retries after initial missing table state" do
+      connection = SolidEvents::Summary.connection
+      singleton = connection.singleton_class
+      singleton.alias_method(:__solid_events_original_data_source_exists__, :data_source_exists?)
+      calls = 0
+      summary_calls = 0
+      singleton.define_method(:data_source_exists?) do |table_name|
+        calls += 1
+        if table_name == SolidEvents::Summary.table_name
+          summary_calls += 1
+          return false if summary_calls <= 2
+        end
+
+        __solid_events_original_data_source_exists__(table_name)
+      end
+
+      SolidEvents::Tracer.reset_storage_availability_cache!
+
+      trace = SolidEvents::Tracer.start_trace!(name: "summary.retry", trace_type: "request", source: "TestController#show")
+      SolidEvents::Tracer.record_event!(event_type: "controller", name: "TestController#show", payload: {}, duration_ms: 1.0)
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      assert_nil SolidEvents::Summary.find_by(trace_id: trace.id)
+
+      trace2 = SolidEvents::Tracer.start_trace!(name: "summary.retry.second", trace_type: "request", source: "TestController#index")
+      SolidEvents::Tracer.record_event!(event_type: "controller", name: "TestController#index", payload: {}, duration_ms: 1.0)
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      assert_not_nil SolidEvents::Summary.find_by(trace_id: trace2.id)
+      assert_operator calls, :>=, 2
+    ensure
+      if defined?(singleton) && singleton.method_defined?(:__solid_events_original_data_source_exists__)
+        singleton.alias_method(:data_source_exists?, :__solid_events_original_data_source_exists__)
+        singleton.remove_method(:__solid_events_original_data_source_exists__)
+      end
+      SolidEvents::Tracer.reset_storage_availability_cache!
     end
 
     test "error fingerprint uses root cause for wrapped exceptions" do
