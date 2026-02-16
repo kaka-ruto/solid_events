@@ -28,7 +28,8 @@ module SolidEvents
                   :ignore_sql_tables, :allow_sql_fragments, :allow_model_prefixes, :allow_job_prefixes,
                   :allow_sql_tables, :allow_controller_prefixes, :sample_rate,
                   :tail_sample_slow_ms, :always_sample_context_keys, :always_sample_when,
-                  :emit_canonical_log_line
+                  :emit_canonical_log_line, :service_name, :service_version,
+                  :deployment_id, :environment_name, :region
     attr_reader :ignore_models
 
     def initialize
@@ -51,6 +52,11 @@ module SolidEvents
       @always_sample_context_keys = []
       @always_sample_when = nil
       @emit_canonical_log_line = true
+      @service_name = detect_service_name
+      @service_version = ENV["APP_VERSION"]
+      @deployment_id = ENV["DEPLOYMENT_ID"]
+      @environment_name = ENV["RAILS_ENV"] || ENV["RACK_ENV"] || "development"
+      @region = ENV["APP_REGION"]
       @retention_period = 30.days
     end
 
@@ -102,6 +108,16 @@ module SolidEvents
 
     def namespace_job_prefixes
       Array(@ignore_namespaces).map { |namespace| "job.#{namespace}" }
+    end
+
+    def detect_service_name
+      if defined?(Rails) && Rails.application
+        Rails.application.class.module_parent_name.underscore
+      else
+        "rails_app"
+      end
+    rescue StandardError
+      "rails_app"
     end
   end
 end

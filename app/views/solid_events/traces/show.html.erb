@@ -39,6 +39,11 @@
     <p class="muted">
       Path: <%= @trace.summary.path || "n/a" %> |
       Request ID: <%= @trace.summary.request_id || "n/a" %> |
+      Service: <%= @trace.summary.service_name || "n/a" %> |
+      Env: <%= @trace.summary.environment_name || "n/a" %> |
+      Version: <%= @trace.summary.service_version || "n/a" %> |
+      Deploy: <%= @trace.summary.deployment_id || "n/a" %> |
+      Region: <%= @trace.summary.region || "n/a" %> |
       Job: <%= @trace.summary.job_class || "n/a" %> |
       Queue: <%= @trace.summary.queue_name || "n/a" %>
     </p>

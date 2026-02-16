@@ -14,7 +14,15 @@ module SolidEvents
           name: trace_name,
           trace_type: "job",
           source: job.class.name,
-          context: {job_id: job.job_id, queue: job.queue_name}
+          context: {
+            job_id: job.job_id,
+            queue: job.queue_name,
+            service_name: SolidEvents.service_name,
+            environment_name: SolidEvents.environment_name,
+            service_version: SolidEvents.service_version,
+            deployment_id: SolidEvents.deployment_id,
+            region: SolidEvents.region
+          }
         )
 
         SolidEvents::Tracer.record_event!(

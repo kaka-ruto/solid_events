@@ -59,6 +59,8 @@ module SolidEvents
       assert_equal 2000.0, configuration.tail_sample_slow_ms
       assert_equal [], configuration.always_sample_context_keys
       assert_equal true, configuration.emit_canonical_log_line
+      assert_predicate configuration.service_name, :present?
+      assert_predicate configuration.environment_name, :present?
     end
   end
 end

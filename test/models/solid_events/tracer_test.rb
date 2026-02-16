@@ -90,7 +90,17 @@ module SolidEvents
         name: "order.created",
         trace_type: "request",
         source: "OrdersController#create",
-        context: {user_id: 1, path: "/orders", method: "POST", request_id: "req-1"}
+        context: {
+          user_id: 1,
+          path: "/orders",
+          method: "POST",
+          request_id: "req-1",
+          service_name: "anywaye",
+          environment_name: "production",
+          service_version: "2026.02.16",
+          deployment_id: "deploy-1",
+          region: "us-east-1"
+        }
       )
 
       linked_record = ::LinkedOrderRecord.new(42)
@@ -119,6 +129,11 @@ module SolidEvents
       assert_equal "/orders", trace.summary.path
       assert_equal 1, trace.summary.sql_count
       assert_equal 1.3, trace.summary.sql_duration_ms
+      assert_equal "anywaye", trace.summary.service_name
+      assert_equal "production", trace.summary.environment_name
+      assert_equal "2026.02.16", trace.summary.service_version
+      assert_equal "deploy-1", trace.summary.deployment_id
+      assert_equal "us-east-1", trace.summary.region
     end
 
     test "does not link ignored model prefixes" do

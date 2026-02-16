@@ -18,6 +18,11 @@ module SolidEvents
         entity_id: 987,
         error_fingerprint: "fp-123",
         request_id: "req-123",
+        service_name: "anywaye",
+        environment_name: "production",
+        service_version: "v1",
+        deployment_id: "d1",
+        region: "us-east-1",
         started_at: trace.started_at,
         event_count: 1,
         record_link_count: 0,
@@ -62,6 +67,7 @@ module SolidEvents
       assert_includes @response.body, "Summary Dimensions"
       assert_includes @response.body, "Correlation Pivots"
       assert_includes @response.body, "SQL:"
+      assert_includes @response.body, "Service: anywaye"
       assert_includes @response.body, "Related Traces by Entity"
       assert_includes @response.body, "Related Traces by Error Fingerprint"
       assert_includes @response.body, "Open all traces for this entity"

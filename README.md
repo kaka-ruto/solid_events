@@ -40,6 +40,7 @@ Stop renting your data.
 - **👤 Context Scraping:** Automatically detects `current_user`, `current_account`, or `tenant_id` from your controllers and tags the trace.
 - **📊 Canonical Wide Events:** Maintains one summary row per trace with outcome, entity, HTTP, timing, and correlation fields for fast filtering.
 - **🎯 Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
+- **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -143,6 +144,13 @@ SolidEvents.configure do |config|
 
   # 7. Emit one JSON line per sampled trace
   config.emit_canonical_log_line = true
+
+  # 8. Deployment dimensions for cross-release debugging
+  config.service_name = "anywaye"
+  config.environment_name = Rails.env
+  config.service_version = ENV["APP_VERSION"]
+  config.deployment_id = ENV["DEPLOYMENT_ID"]
+  config.region = ENV["APP_REGION"]
 end
 ```
 

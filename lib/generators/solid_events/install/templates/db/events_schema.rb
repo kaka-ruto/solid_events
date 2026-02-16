@@ -62,6 +62,11 @@ ActiveRecord::Schema[7.1].define do
     t.string :path
     t.string :job_class
     t.string :queue_name
+    t.string :service_name
+    t.string :environment_name
+    t.string :service_version
+    t.string :deployment_id
+    t.string :region
     t.datetime :started_at, null: false
     t.datetime :finished_at
     t.float :duration_ms
@@ -89,4 +94,9 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_summaries, :request_method
   add_index :solid_events_summaries, :request_id
   add_index :solid_events_summaries, :queue_name
+  add_index :solid_events_summaries, :service_name
+  add_index :solid_events_summaries, :environment_name
+  add_index :solid_events_summaries, :service_version
+  add_index :solid_events_summaries, :deployment_id
+  add_index :solid_events_summaries, :region
 end

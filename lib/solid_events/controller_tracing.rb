@@ -33,7 +33,12 @@ module SolidEvents
         "path" => request.path,
         "method" => request.request_method,
         "request_id" => request.request_id,
-        "format" => request.format&.to_s
+        "format" => request.format&.to_s,
+        "service_name" => SolidEvents.service_name,
+        "environment_name" => SolidEvents.environment_name,
+        "service_version" => SolidEvents.service_version,
+        "deployment_id" => SolidEvents.deployment_id,
+        "region" => SolidEvents.region
       }.merge(SolidEvents::ContextScraper.from_controller(self))
 
       SolidEvents::Tracer.start_trace!(

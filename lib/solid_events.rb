@@ -76,5 +76,25 @@ module SolidEvents
     def annotate!(context = {})
       SolidEvents::Tracer.annotate!(context)
     end
+
+    def service_name
+      configuration.service_name
+    end
+
+    def service_version
+      configuration.service_version
+    end
+
+    def deployment_id
+      configuration.deployment_id
+    end
+
+    def environment_name
+      configuration.environment_name
+    end
+
+    def region
+      configuration.region
+    end
   end
 end
