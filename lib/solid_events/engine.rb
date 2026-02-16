@@ -8,6 +8,9 @@ require_relative "incident_evaluator"
 require_relative "notifiers/slack_webhook_notifier"
 require_relative "subscribers/sql_subscriber"
 require_relative "subscribers/job_subscriber"
+require_relative "subscribers/action_cable_subscriber"
+require_relative "subscribers/mailer_subscriber"
+require_relative "subscribers/external_http_subscriber"
 require_relative "subscribers/error_subscriber"
 
 module SolidEvents
@@ -26,9 +29,17 @@ module SolidEvents
     initializer "solid_events.subscribers" do
       sql_subscriber = SolidEvents::Subscribers::SqlSubscriber.new
       job_subscriber = SolidEvents::Subscribers::JobSubscriber.new
+      cable_subscriber = SolidEvents::Subscribers::ActionCableSubscriber.new
+      mailer_subscriber = SolidEvents::Subscribers::MailerSubscriber.new
+      external_http_subscriber = SolidEvents::Subscribers::ExternalHttpSubscriber.new
 
       ActiveSupport::Notifications.subscribe("sql.active_record", sql_subscriber)
       ActiveSupport::Notifications.subscribe("perform.active_job", job_subscriber)
+      ActiveSupport::Notifications.subscribe("perform_action.action_cable", cable_subscriber)
+      ActiveSupport::Notifications.subscribe("process.action_mailer", mailer_subscriber)
+      ActiveSupport::Notifications.subscribe("request.faraday", external_http_subscriber)
+      ActiveSupport::Notifications.subscribe("request.http", external_http_subscriber)
+      ActiveSupport::Notifications.subscribe("http.client", external_http_subscriber)
       Rails.error.subscribe(SolidEvents::Subscribers::ErrorSubscriber.new)
     end
 

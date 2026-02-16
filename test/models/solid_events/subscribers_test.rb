@@ -68,6 +68,44 @@ module SolidEvents
       assert_equal 0, SolidEvents::Event.count
     end
 
+    test "action cable subscriber creates standalone trace when no active trace exists" do
+      subscriber = SolidEvents::Subscribers::ActionCableSubscriber.new
+      payload = {channel_class: "ChatChannel", action: "speak"}
+
+      subscriber.call("perform_action.action_cable", Time.current, Time.current + 0.003, "1", payload)
+
+      trace = SolidEvents::Trace.last
+      assert_equal "cable", trace.trace_type
+      assert_equal "ChatChannel", trace.source
+      assert_equal 1, trace.events.count
+      assert_equal "action_cable", trace.events.first.event_type
+    end
+
+    test "mailer subscriber creates standalone trace when no active trace exists" do
+      subscriber = SolidEvents::Subscribers::MailerSubscriber.new
+      payload = {mailer: "OrderMailer", action: "receipt", message_id: "m-1"}
+
+      subscriber.call("process.action_mailer", Time.current, Time.current + 0.004, "1", payload)
+
+      trace = SolidEvents::Trace.last
+      assert_equal "mailer", trace.trace_type
+      assert_equal "OrderMailer", trace.source
+      assert_equal 1, trace.events.count
+      assert_equal "mailer", trace.events.first.event_type
+    end
+
+    test "external http subscriber appends event to active trace" do
+      SolidEvents::Tracer.start_trace!(name: "request", trace_type: "request", source: "OrdersController#create")
+      subscriber = SolidEvents::Subscribers::ExternalHttpSubscriber.new
+      payload = {method: "post", url: "https://api.example.com/orders", status: 201}
+
+      subscriber.call("request.faraday", Time.current, Time.current + 0.008, "1", payload)
+      SolidEvents::Tracer.finish_trace!
+
+      trace = SolidEvents::Trace.last
+      assert_equal 1, trace.events.where(event_type: "external_http").count
+    end
+
     test "error subscriber links current trace using fingerprint" do
       trace = SolidEvents::Tracer.start_trace!(name: "test", trace_type: "request", source: "x")
       subscriber = SolidEvents::Subscribers::ErrorSubscriber.new
