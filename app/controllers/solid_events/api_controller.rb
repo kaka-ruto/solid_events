@@ -109,8 +109,6 @@ module SolidEvents
     end
 
     def error_rates
-      return render json: {groups: []} unless summary_table_available?
-
       dimension = metric_dimension_param
       groups = summary_scope_for_metrics
         .group(dimension)
@@ -134,8 +132,6 @@ module SolidEvents
     end
 
     def latency
-      return render json: {groups: []} unless summary_table_available?
-
       dimension = metric_dimension_param
       groups = summary_scope_for_metrics
         .where.not(duration_ms: nil)
@@ -163,8 +159,6 @@ module SolidEvents
     end
 
     def compare_metrics
-      return render json: {groups: []} unless summary_table_available?
-
       dimension = metric_dimension_param
       metric = metric_param
       windows = metric_compare_windows
@@ -204,7 +198,6 @@ module SolidEvents
     end
 
     def cohort_metrics
-      return render json: {groups: []} unless summary_table_available?
       return render json: {error: "cohort_key is required"}, status: :unprocessable_entity if params[:cohort_key].blank?
 
       metric = metric_param
@@ -253,8 +246,6 @@ module SolidEvents
     end
 
     def journeys
-      return render json: {journeys: []} unless summary_table_available?
-
       scope = summary_scope_for_metrics
       scope = scope.where(request_id: params[:request_id].to_s) if params[:request_id].present?
       if params[:entity_type].present?
@@ -426,12 +417,6 @@ module SolidEvents
       end
     rescue StandardError
       []
-    end
-
-    def summary_table_available?
-      SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
-    rescue StandardError
-      false
     end
 
     def metric_window_param

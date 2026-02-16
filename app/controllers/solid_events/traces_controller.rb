@@ -53,11 +53,8 @@ module SolidEvents
       @error_count = scope.where(status: "error").count("DISTINCT solid_events_traces.id")
       @page_count = (@total_count.to_f / @per_page).ceil
 
-      includes = [:events, :record_links, :error_links]
-      includes << :summary if summary_table_available?
-
       @traces = scope
-        .includes(*includes)
+        .includes(:events, :record_links, :error_links, :summary)
         .offset((@page - 1) * @per_page)
         .limit(@per_page)
 
@@ -156,49 +153,30 @@ module SolidEvents
     def apply_entity_filters(scope)
       return scope if @entity_type.blank? && @entity_id.blank?
 
-      if summary_table_available?
-        scoped = scope.left_outer_joins(:summary)
-        scoped = scoped.where("solid_events_summaries.entity_type ILIKE ?", "%#{@entity_type}%") if @entity_type.present?
-        scoped = scoped.where(solid_events_summaries: {entity_id: @entity_id.to_i}) if @entity_id.present?
-        return scoped
-      end
-
-      scoped = scope.left_outer_joins(:record_links)
-      scoped = scoped.where("solid_events_record_links.record_type ILIKE ?", "%#{@entity_type}%") if @entity_type.present?
-      scoped = scoped.where(solid_events_record_links: {record_id: @entity_id.to_i}) if @entity_id.present?
-      scoped.distinct
+      scoped = scope.left_outer_joins(:summary)
+      scoped = scoped.where("solid_events_summaries.entity_type ILIKE ?", "%#{@entity_type}%") if @entity_type.present?
+      scoped = scoped.where(solid_events_summaries: {entity_id: @entity_id.to_i}) if @entity_id.present?
+      scoped
     end
 
     def apply_error_fingerprint_filter(scope)
       return scope if @error_fingerprint.blank?
 
-      if summary_table_available?
-        return scope.left_outer_joins(:summary).where(solid_events_summaries: {error_fingerprint: @error_fingerprint})
-      end
-
-      apply_context_key_filter(scope, "error_fingerprint", @error_fingerprint)
+      scope.left_outer_joins(:summary).where(solid_events_summaries: {error_fingerprint: @error_fingerprint})
     end
 
     def apply_request_id_filter(scope)
       return scope if @request_id.blank?
 
-      if summary_table_available?
-        return scope.left_outer_joins(:summary).where(solid_events_summaries: {request_id: @request_id})
-      end
-
-      apply_context_key_filter(scope, "request_id", @request_id)
+      scope.left_outer_joins(:summary).where(solid_events_summaries: {request_id: @request_id})
     end
 
     def apply_feature_slice_filter(scope)
       return scope if @feature_key.blank? || @feature_value.blank?
       return scope unless SolidEvents.feature_slice_keys.include?(@feature_key)
 
-      if summary_table_available?
-        return scope.left_outer_joins(:summary)
-          .where("CAST(solid_events_summaries.payload AS TEXT) LIKE ?", "%\"#{@feature_key}\":\"#{@feature_value}\"%")
-      end
-
-      apply_context_key_filter(scope, @feature_key, @feature_value)
+      scope.left_outer_joins(:summary)
+        .where("CAST(solid_events_summaries.payload AS TEXT) LIKE ?", "%\"#{@feature_key}\":\"#{@feature_value}\"%")
     end
 
     def set_trace
@@ -215,12 +193,6 @@ module SolidEvents
         .where("EXTRACT(EPOCH FROM (solid_events_traces.finished_at - solid_events_traces.started_at)) * 1000 >= ?", min_duration)
     end
 
-    def summary_table_available?
-      @summary_table_available ||= SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
-    rescue StandardError
-      false
-    end
-
     def load_correlation_pivots
       @correlation = {
         entity_trace_count: 0,
@@ -231,8 +203,6 @@ module SolidEvents
         baseline_avg_duration_ms: nil,
         duration_regression: false
       }
-      return unless summary_table_available?
-
       summaries = SolidEvents::Summary.where(started_at: 7.days.ago..Time.current)
 
       if @trace.summary&.entity_type.present? && @trace.summary&.entity_id.present?
@@ -264,7 +234,6 @@ module SolidEvents
     def load_related_traces
       @related_entity_traces = []
       @related_fingerprint_traces = []
-      return unless summary_table_available?
       return unless @trace.summary
 
       base_scope = SolidEvents::Trace.recent.where.not(id: @trace.id).includes(:summary)
@@ -289,8 +258,6 @@ module SolidEvents
       @new_error_fingerprints = []
       @hot_paths = []
       @new_error_fingerprints_since_deploy = []
-      return unless summary_table_available?
-
       summaries = SolidEvents::Summary.where(started_at: 7.days.ago..Time.current).where.not(duration_ms: nil)
       grouped = summaries.group_by { |summary| [summary.name, summary.source] }
       @hot_paths = grouped.filter_map do |(name, source), rows|
@@ -362,7 +329,6 @@ module SolidEvents
       @compare_baseline_window = params[:compare_baseline_window].to_s
       @compare_baseline_window = @compare_window unless @compare_baseline_window.in?(%w[1h 24h 7d 30d])
       @compare_rows = []
-      return unless summary_table_available?
 
       windows = compare_windows
       scope = SolidEvents::Summary.all
