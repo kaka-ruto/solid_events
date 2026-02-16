@@ -72,5 +72,9 @@ module SolidEvents
     def emit_canonical_log_line?
       !!configuration.emit_canonical_log_line
     end
+
+    def annotate!(context = {})
+      SolidEvents::Tracer.annotate!(context)
+    end
   end
 end

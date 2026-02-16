@@ -64,6 +64,18 @@ module SolidEvents
       upsert_summary!(trace)
     end
 
+    def annotate!(context = {})
+      return unless storage_available?
+
+      trace = current_trace
+      return unless trace
+
+      existing_context = normalize_context(trace.context.to_h)
+      trace.update!(context: existing_context.merge(normalize_context(context)))
+      upsert_summary!(trace)
+      trace
+    end
+
     def link_record!(record)
       return unless storage_available?
 
@@ -223,6 +235,7 @@ module SolidEvents
       http_status = context["status"].presence&.to_i
 
       summary = SolidEvents::Summary.find_or_initialize_by(trace_id: trace.id)
+      sql_scope = trace.events.where(event_type: "sql")
       summary.assign_attributes(
         name: trace.name,
         trace_type: trace.trace_type,
@@ -241,6 +254,8 @@ module SolidEvents
         finished_at: trace.finished_at,
         duration_ms: trace.finished_at && trace.started_at ? ((trace.finished_at - trace.started_at) * 1000.0).round(2) : nil,
         event_count: trace.events.count,
+        sql_count: sql_scope.count,
+        sql_duration_ms: sql_scope.sum(:duration_ms).to_f.round(2),
         record_link_count: trace.record_links.count,
         error_count: trace.error_links.count,
         user_id: context["user_id"],

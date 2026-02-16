@@ -146,23 +146,20 @@ SolidEvents.configure do |config|
 end
 ```
 
-### Replacing Rails Default Logs
+### High-Signal Logging Without Disabling Rails Logs
 
-`SolidEvents` emits one canonical JSON line per sampled trace, which is enough to replace default multi-line request logs.
+`SolidEvents` emits one canonical JSON line per sampled trace so teams can rely on stable, queryable events while keeping default Rails logs enabled.
 
-```ruby
-# config/environments/production.rb
-config.log_tags = []
-config.log_level = :info
-```
+### Add Business Context During Execution
+
+You can enrich the current trace with product-specific dimensions from controllers, jobs, or services:
 
 ```ruby
-# config/initializers/disable_default_rails_logs.rb
-ActiveSupport::LogSubscriber.log_subscribers.each do |subscriber|
-  if subscriber.is_a?(ActionController::LogSubscriber) || subscriber.is_a?(ActiveRecord::LogSubscriber)
-    subscriber.class.detach_from(subscriber.namespace)
-  end
-end
+SolidEvents.annotate!(
+  plan: current_account.plan_name,
+  cart_value_cents: @cart.total_cents,
+  checkout_experiment: "checkout_v3"
+)
 ```
 
 ---
@@ -187,6 +184,7 @@ end
 - **Request Correlation:** Filter and pivot by canonical `request_id` to stitch related traces instantly.
 - **Correlation Pivots:** On each trace page, see related entity/error clusters and a simple duration regression signal.
 - **Related Trace Exploration:** Jump from one trace to all traces sharing the same entity or error fingerprint.
+- **Regression Surfacing:** Index highlights latency regressions and newly-seen error fingerprints.
 
 ---
 

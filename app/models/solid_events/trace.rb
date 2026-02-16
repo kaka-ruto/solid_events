@@ -34,6 +34,8 @@ module SolidEvents
           finished_at: summary.finished_at,
           duration_ms: summary.duration_ms,
           event_count: summary.event_count,
+          sql_count: summary.sql_count,
+          sql_duration_ms: summary.sql_duration_ms,
           record_link_count: summary.record_link_count,
           error_count: summary.error_count,
           user_id: summary.user_id,

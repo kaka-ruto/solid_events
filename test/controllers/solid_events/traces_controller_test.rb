@@ -43,6 +43,8 @@ module SolidEvents
       get "/solid_events"
       assert_response :success
       assert_includes @response.body, "Context Graph"
+      assert_includes @response.body, "Regression Candidates"
+      assert_includes @response.body, "New Error Fingerprints"
 
       get "/solid_events", params: {entity_type: "Order", entity_id: "987"}
       assert_response :success
@@ -59,6 +61,7 @@ module SolidEvents
       assert_includes @response.body, "Canonical Event"
       assert_includes @response.body, "Summary Dimensions"
       assert_includes @response.body, "Correlation Pivots"
+      assert_includes @response.body, "SQL:"
       assert_includes @response.body, "Related Traces by Entity"
       assert_includes @response.body, "Related Traces by Error Fingerprint"
       assert_includes @response.body, "Open all traces for this entity"

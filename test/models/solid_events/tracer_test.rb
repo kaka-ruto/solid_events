@@ -117,6 +117,8 @@ module SolidEvents
       assert_equal "POST", trace.summary.request_method
       assert_equal "req-1", trace.summary.request_id
       assert_equal "/orders", trace.summary.path
+      assert_equal 1, trace.summary.sql_count
+      assert_equal 1.3, trace.summary.sql_duration_ms
     end
 
     test "does not link ignored model prefixes" do
@@ -246,6 +248,22 @@ module SolidEvents
     ensure
       Rails.logger = previous_logger
       SolidEvents.configuration.emit_canonical_log_line = previous_emit
+    end
+
+    test "annotate merges additional business context into active trace" do
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "checkout.started",
+        trace_type: "request",
+        source: "CheckoutsController#create",
+        context: {request_id: "req-2"}
+      )
+
+      SolidEvents.annotate!(plan: "pro", cart_value_cents: 8999)
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      context = trace.reload.context.to_h
+      assert_equal "pro", context["plan"]
+      assert_equal 8999, context["cart_value_cents"]
     end
   end
 end

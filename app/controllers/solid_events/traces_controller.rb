@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "set"
 
 module SolidEvents
   class TracesController < ApplicationController
@@ -54,6 +55,8 @@ module SolidEvents
         .includes(*includes)
         .offset((@page - 1) * @per_page)
         .limit(@per_page)
+
+      load_index_insights
     end
 
     def show
@@ -216,6 +219,52 @@ module SolidEvents
         .left_outer_joins(:summary)
         .where(solid_events_summaries: {error_fingerprint: @trace.summary.error_fingerprint})
         .limit(10)
+    end
+
+    def load_index_insights
+      @regression_candidates = []
+      @new_error_fingerprints = []
+      return unless summary_table_available?
+
+      summaries = SolidEvents::Summary.where(started_at: 7.days.ago..Time.current).where.not(duration_ms: nil)
+      grouped = summaries.group_by { |summary| [summary.name, summary.source] }
+      @regression_candidates = grouped.filter_map do |(name, source), rows|
+        recent = rows.select { |row| row.started_at >= 24.hours.ago }.map(&:duration_ms)
+        baseline = rows.select { |row| row.started_at < 24.hours.ago }.map(&:duration_ms)
+        next if recent.size < 3 || baseline.size < 5
+
+        recent_avg = (recent.sum / recent.size).round(2)
+        baseline_avg = (baseline.sum / baseline.size).round(2)
+        next unless recent_avg > (baseline_avg * 1.5) && (recent_avg - baseline_avg) >= 50
+
+        {
+          name: name,
+          source: source,
+          recent_avg_duration_ms: recent_avg,
+          baseline_avg_duration_ms: baseline_avg,
+          delta_ms: (recent_avg - baseline_avg).round(2)
+        }
+      end.sort_by { |candidate| -candidate[:delta_ms] }.first(10)
+
+      recent_fingerprint_scope = SolidEvents::Summary
+        .where(started_at: 24.hours.ago..Time.current)
+        .where.not(error_fingerprint: [nil, ""])
+      baseline_fingerprints = SolidEvents::Summary
+        .where(started_at: 7.days.ago...24.hours.ago)
+        .where.not(error_fingerprint: [nil, ""])
+        .distinct
+        .pluck(:error_fingerprint)
+        .to_set
+
+      @new_error_fingerprints = recent_fingerprint_scope
+        .where.not(error_fingerprint: baseline_fingerprints.to_a)
+        .order(started_at: :desc)
+        .limit(10)
+        .map { |summary| {fingerprint: summary.error_fingerprint, source: summary.source, trace_id: summary.trace_id} }
+        .uniq { |entry| entry[:fingerprint] }
+    rescue StandardError
+      @regression_candidates = []
+      @new_error_fingerprints = []
     end
   end
 end

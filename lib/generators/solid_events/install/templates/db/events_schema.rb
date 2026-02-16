@@ -66,6 +66,8 @@ ActiveRecord::Schema[7.1].define do
     t.datetime :finished_at
     t.float :duration_ms
     t.integer :event_count, null: false, default: 0
+    t.integer :sql_count, null: false, default: 0
+    t.float :sql_duration_ms, null: false, default: 0.0
     t.integer :record_link_count, null: false, default: 0
     t.integer :error_count, null: false, default: 0
     t.bigint :user_id

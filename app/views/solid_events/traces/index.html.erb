@@ -82,6 +82,53 @@
 </div>
 
 <div class="card">
+  <h3>Regression Candidates (24h vs prior 7d)</h3>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Source</th>
+          <th>Recent Avg</th>
+          <th>Baseline Avg</th>
+          <th>Delta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @regression_candidates.each do |candidate| %>
+          <tr>
+            <td><%= candidate[:name] %></td>
+            <td><%= candidate[:source] %></td>
+            <td><%= candidate[:recent_avg_duration_ms] %> ms</td>
+            <td><%= candidate[:baseline_avg_duration_ms] %> ms</td>
+            <td><%= candidate[:delta_ms] %> ms</td>
+          </tr>
+        <% end %>
+        <% if @regression_candidates.empty? %>
+          <tr><td colspan="5" class="muted">No active regressions detected.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>New Error Fingerprints (24h)</h3>
+  <ul>
+    <% @new_error_fingerprints.each do |entry| %>
+      <li>
+        <code><%= entry[:fingerprint] %></code>
+        in <strong><%= entry[:source] %></strong>
+        (<%= link_to "trace ##{entry[:trace_id]}", trace_path(entry[:trace_id]) %>)
+      </li>
+    <% end %>
+    <% if @new_error_fingerprints.empty? %>
+      <li class="muted">No new fingerprints in the last 24 hours.</li>
+    <% end %>
+  </ul>
+</div>
+
+<div class="card">
   <div class="table-scroll">
     <table class="traces-table">
     <thead>
@@ -93,6 +140,8 @@
         <th>Source</th>
         <th>Duration</th>
         <th>Events</th>
+        <th>SQL Count</th>
+        <th>SQL Time</th>
         <th>Records</th>
         <th>Errors</th>
         <th>Started</th>
@@ -108,6 +157,8 @@
           <td><%= trace.source %></td>
           <td><%= formatted_trace_duration(trace) %></td>
           <td><%= trace_event_count(trace) %></td>
+          <td><%= trace_sql_count(trace) %></td>
+          <td><%= trace_sql_duration_ms(trace) %> ms</td>
           <td><%= trace_record_link_count(trace) %></td>
           <td><%= trace_error_link_count(trace) %></td>
           <td title="<%= absolute_time(trace.started_at) %>"><%= relative_time(trace.started_at) %></td>
@@ -115,7 +166,7 @@
       <% end %>
       <% if @traces.empty? %>
         <tr>
-          <td colspan="10" class="muted">No traces found for the current filters.</td>
+          <td colspan="12" class="muted">No traces found for the current filters.</td>
         </tr>
       <% end %>
     </tbody>

@@ -57,6 +57,17 @@ module SolidEvents
       trace.summary&.error_count || trace.error_links.size
     end
 
+    def trace_sql_count(trace)
+      trace.summary&.sql_count || trace.events.count { |event| event.event_type == "sql" }
+    end
+
+    def trace_sql_duration_ms(trace)
+      value = trace.summary&.sql_duration_ms
+      return value if value
+
+      trace.events.select { |event| event.event_type == "sql" }.sum { |event| event.duration_ms.to_f }.round(2)
+    end
+
     def duration_delta_label(recent_ms, baseline_ms)
       return "n/a" unless recent_ms && baseline_ms
 
