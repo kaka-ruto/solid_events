@@ -61,7 +61,7 @@ module SolidEvents
 
     def assign_incident
       incident = SolidEvents::Incident.find(params[:id])
-      incident.update!(owner: params[:owner].presence, team: params[:team].presence)
+      incident.assign!(owner: params[:owner].presence, team: params[:team].presence)
       render json: serialize_incident(incident)
     end
 
@@ -75,7 +75,11 @@ module SolidEvents
 
     def resolve_incident
       incident = SolidEvents::Incident.find(params[:id])
-      incident.resolve!
+      if params[:resolved_by].present? || params[:resolution_note].present?
+        incident.resolve_with!(resolved_by: params[:resolved_by].presence || "system", resolution_note: params[:resolution_note].presence)
+      else
+        incident.resolve!
+      end
       render json: serialize_incident(incident)
     end
 
@@ -154,6 +158,7 @@ module SolidEvents
         status: incident.status,
         owner: incident.owner,
         team: incident.team,
+        assigned_at: incident.assigned_at,
         source: incident.source,
         name: incident.name,
         fingerprint: incident.fingerprint,
@@ -162,6 +167,8 @@ module SolidEvents
         last_seen_at: incident.last_seen_at,
         acknowledged_at: incident.acknowledged_at,
         resolved_at: incident.resolved_at,
+        resolved_by: incident.resolved_by,
+        resolution_note: incident.resolution_note,
         muted_until: incident.muted_until
       }
     end

@@ -22,11 +22,24 @@ module SolidEvents
     end
 
     def reopen!
-      update!(status: "active", resolved_at: nil)
+      update!(status: "active", resolved_at: nil, resolved_by: nil, resolution_note: nil)
     end
 
     def mute_for!(duration)
       update!(muted_until: duration.from_now)
+    end
+
+    def assign!(owner:, team: nil)
+      update!(owner: owner, team: team, assigned_at: Time.current)
+    end
+
+    def resolve_with!(resolved_by:, resolution_note: nil)
+      update!(
+        status: "resolved",
+        resolved_at: Time.current,
+        resolved_by: resolved_by,
+        resolution_note: resolution_note
+      )
     end
   end
 end

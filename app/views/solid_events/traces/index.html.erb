@@ -111,6 +111,8 @@
           <th>Severity</th>
           <th>Kind</th>
           <th>Name</th>
+          <th>Owner</th>
+          <th>Team</th>
           <th>Source</th>
           <th>Last Seen</th>
           <th>Details</th>
@@ -125,6 +127,8 @@
             <td><span class="badge <%= incident.severity == "critical" ? "error" : "muted" %>"><%= incident.severity %></span></td>
             <td><%= incident.kind %></td>
             <td><%= incident.name %></td>
+            <td><%= incident.owner || "unassigned" %></td>
+            <td><%= incident.team || "n/a" %></td>
             <td><%= incident.source %></td>
             <td title="<%= absolute_time(incident.last_seen_at) %>"><%= relative_time(incident.last_seen_at) %></td>
             <td><%= incident.payload.to_h.to_json %></td>
@@ -146,7 +150,7 @@
           </tr>
         <% end %>
         <% if @incidents.empty? %>
-          <tr><td colspan="9" class="muted">No incidents detected.</td></tr>
+          <tr><td colspan="11" class="muted">No incidents detected.</td></tr>
         <% end %>
       </tbody>
     </table>

@@ -95,10 +95,17 @@ module SolidEvents
       assert_response :success
       assert_equal "alice", incident.reload.owner
       assert_equal "platform", incident.reload.team
+      assert_not_nil incident.assigned_at
 
       patch "/solid_events/api/incidents/#{incident.id}/mute", params: {minutes: 30}
       assert_response :success
       assert_not_nil incident.reload.muted_until
+
+      patch "/solid_events/api/incidents/#{incident.id}/resolve", params: {resolved_by: "alice", resolution_note: "deployed fix"}
+      assert_response :success
+      assert_equal "resolved", incident.reload.status
+      assert_equal "alice", incident.resolved_by
+      assert_equal "deployed fix", incident.resolution_note
     end
 
     test "incident context bundle returns links and evidence" do
