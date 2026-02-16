@@ -61,6 +61,8 @@ module SolidEvents
       assert_equal true, configuration.emit_canonical_log_line
       assert_predicate configuration.service_name, :present?
       assert_predicate configuration.environment_name, :present?
+      assert_includes configuration.sensitive_keys, "password"
+      assert_equal "[REDACTED]", configuration.redaction_placeholder
     end
   end
 end

@@ -96,5 +96,13 @@ module SolidEvents
     def region
       configuration.region
     end
+
+    def sensitive_keys
+      Array(configuration.sensitive_keys).map(&:to_s)
+    end
+
+    def redaction_placeholder
+      configuration.redaction_placeholder.to_s
+    end
   end
 end

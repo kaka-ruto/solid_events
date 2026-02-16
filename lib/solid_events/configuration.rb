@@ -29,7 +29,8 @@ module SolidEvents
                   :allow_sql_tables, :allow_controller_prefixes, :sample_rate,
                   :tail_sample_slow_ms, :always_sample_context_keys, :always_sample_when,
                   :emit_canonical_log_line, :service_name, :service_version,
-                  :deployment_id, :environment_name, :region
+                  :deployment_id, :environment_name, :region, :sensitive_keys,
+                  :redaction_placeholder
     attr_reader :ignore_models
 
     def initialize
@@ -57,6 +58,12 @@ module SolidEvents
       @deployment_id = ENV["DEPLOYMENT_ID"]
       @environment_name = ENV["RAILS_ENV"] || ENV["RACK_ENV"] || "development"
       @region = ENV["APP_REGION"]
+      @sensitive_keys = %w[
+        password password_confirmation secret token access_token refresh_token
+        authorization cookie session csrf authenticity_token api_key private_key
+        encrypted encrypted_password credit_card card_number cvv ssn otp
+      ]
+      @redaction_placeholder = "[REDACTED]"
       @retention_period = 30.days
     end
 

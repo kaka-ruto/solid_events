@@ -14,7 +14,7 @@ module SolidEvents
         name: name,
         trace_type: trace_type,
         source: source,
-        context: normalize_context(context),
+        context: redact_hash(normalize_context(context)),
         started_at: Time.current
       )
       SolidEvents::Current.trace = trace
@@ -33,7 +33,7 @@ module SolidEvents
 
       existing_context = normalize_context(trace.context.to_h)
       extra_context = normalize_context(context)
-      final_context = existing_context.merge(extra_context)
+      final_context = redact_hash(existing_context.merge(extra_context))
       trace.update!(status: status, finished_at: Time.current, context: final_context)
 
       unless keep_trace?(trace, context: final_context)
@@ -57,7 +57,7 @@ module SolidEvents
       trace.events.create!(
         event_type: event_type,
         name: name,
-        payload: payload,
+        payload: redact_hash(normalize_context(payload)),
         duration_ms: duration_ms,
         occurred_at: Time.current
       )
@@ -71,7 +71,7 @@ module SolidEvents
       return unless trace
 
       existing_context = normalize_context(trace.context.to_h)
-      trace.update!(context: existing_context.merge(normalize_context(context)))
+      trace.update!(context: redact_hash(existing_context.merge(normalize_context(context))))
       upsert_summary!(trace)
       trace
     end
@@ -401,6 +401,28 @@ module SolidEvents
 
     def root_cause(exception)
       exception_chain(exception).last || exception
+    end
+
+    def redact_hash(value)
+      case value
+      when Hash
+        value.each_with_object({}) do |(key, nested), output|
+          key_string = key.to_s
+          if sensitive_key?(key_string)
+            output[key_string] = SolidEvents.redaction_placeholder
+          else
+            output[key_string] = redact_hash(nested)
+          end
+        end
+      when Array
+        value.map { |entry| redact_hash(entry) }
+      else
+        value
+      end
+    end
+
+    def sensitive_key?(key)
+      SolidEvents.sensitive_keys.any? { |sensitive| key.downcase.include?(sensitive.downcase) }
     end
   end
 end

@@ -17,5 +17,8 @@ SolidEvents.configure do |config|
   # config.always_sample_when = ->(trace:, context:, duration_ms:) { context["tenant_id"].present? }
   # Emit one canonical JSON log line per sampled trace.
   # config.emit_canonical_log_line = true
+  # Built-in PII redaction for canonical traces/events.
+  # config.sensitive_keys += ["customer_email", "phone_number"]
+  # config.redaction_placeholder = "[FILTERED]"
   config.retention_period = 30.days
 end

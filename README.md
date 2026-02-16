@@ -41,6 +41,7 @@ Stop renting your data.
 - **📊 Canonical Wide Events:** Maintains one summary row per trace with outcome, entity, HTTP, timing, and correlation fields for fast filtering.
 - **🎯 Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
 - **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
+- **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -151,6 +152,10 @@ SolidEvents.configure do |config|
   config.service_version = ENV["APP_VERSION"]
   config.deployment_id = ENV["DEPLOYMENT_ID"]
   config.region = ENV["APP_REGION"]
+
+  # 9. Redaction policy
+  config.sensitive_keys += ["customer_email", "phone_number"]
+  config.redaction_placeholder = "[FILTERED]"
 end
 ```
 

@@ -280,5 +280,35 @@ module SolidEvents
       assert_equal "pro", context["plan"]
       assert_equal 8999, context["cart_value_cents"]
     end
+
+    test "redacts sensitive keys in context and event payload" do
+      previous_sensitive_keys = SolidEvents.configuration.sensitive_keys
+      previous_placeholder = SolidEvents.configuration.redaction_placeholder
+      SolidEvents.configuration.sensitive_keys = previous_sensitive_keys + ["customer_email"]
+      SolidEvents.configuration.redaction_placeholder = "[FILTERED]"
+
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "auth.login",
+        trace_type: "request",
+        source: "SessionsController#create",
+        context: {password: "super-secret", customer_email: "a@example.com"}
+      )
+      SolidEvents::Tracer.record_event!(
+        event_type: "custom",
+        name: "auth.attempt",
+        payload: {authorization: "Bearer abc", nested: {refresh_token: "xyz"}}
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      trace.reload
+      event_payload = trace.events.first.payload.to_h
+      assert_equal "[FILTERED]", trace.context["password"]
+      assert_equal "[FILTERED]", trace.context["customer_email"]
+      assert_equal "[FILTERED]", event_payload["authorization"]
+      assert_equal "[FILTERED]", event_payload["nested"]["refresh_token"]
+    ensure
+      SolidEvents.configuration.sensitive_keys = previous_sensitive_keys
+      SolidEvents.configuration.redaction_placeholder = previous_placeholder
+    end
   end
 end
