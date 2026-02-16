@@ -81,6 +81,25 @@
   </div>
 </div>
 
+<div class="stats-grid">
+  <div class="card stat">
+    <span class="label">Throughput</span>
+    <strong><%= @slo_panel[:throughput] %></strong>
+  </div>
+  <div class="card stat">
+    <span class="label">Error Rate</span>
+    <strong><%= @slo_panel[:error_rate_pct] %>%</strong>
+  </div>
+  <div class="card stat">
+    <span class="label">P95</span>
+    <strong><%= @slo_panel[:p95_ms] || "n/a" %> ms</strong>
+  </div>
+  <div class="card stat">
+    <span class="label">P99</span>
+    <strong><%= @slo_panel[:p99_ms] || "n/a" %> ms</strong>
+  </div>
+</div>
+
 <div class="card">
   <h3>Hot Paths (7d)</h3>
   <div class="table-scroll">
@@ -99,8 +118,8 @@
       <tbody>
         <% @hot_paths.each do |path| %>
           <tr>
-            <td><%= path[:name] %></td>
-            <td><%= path[:source] %></td>
+            <td><%= link_to path[:name], path[:link] %></td>
+            <td><%= link_to path[:source], path[:link] %></td>
             <td><%= path[:count] %></td>
             <td><%= path[:p50_ms] %> ms</td>
             <td><%= path[:p95_ms] %> ms</td>

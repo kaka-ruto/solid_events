@@ -20,5 +20,8 @@ SolidEvents.configure do |config|
   # Built-in PII redaction for canonical traces/events.
   # config.sensitive_keys += ["customer_email", "phone_number"]
   # config.redaction_placeholder = "[FILTERED]"
+  # Wide-event primary mode: keep canonical summaries, optionally skip sub-event rows.
+  # config.wide_event_primary = true
+  # config.persist_sub_events = false
   config.retention_period = 30.days
 end

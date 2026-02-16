@@ -56,7 +56,50 @@ module SolidEvents
         .offset((@page - 1) * @per_page)
         .limit(@per_page)
 
+      load_slo_panel(scope)
       load_index_insights
+    end
+
+    def hot_path
+      @name = params[:name].to_s
+      @source = params[:source].to_s
+      @window = params[:window].to_s.presence || "7d"
+      scope = SolidEvents::Trace.recent.where(name: @name, source: @source)
+      scope = case @window
+      when "24h" then scope.where("solid_events_traces.started_at >= ?", 24.hours.ago)
+      else scope.where("solid_events_traces.started_at >= ?", 7.days.ago)
+      end
+
+      @traces = scope.limit(200)
+      durations = @traces.filter_map do |trace|
+        next unless trace.started_at && trace.finished_at
+
+        ((trace.finished_at - trace.started_at) * 1000.0).round(2)
+      end.sort
+      @latency_stats = {
+        count: durations.size,
+        p50_ms: percentile(durations, 0.50),
+        p95_ms: percentile(durations, 0.95),
+        p99_ms: percentile(durations, 0.99),
+        error_rate_pct: if @traces.any?
+          ((@traces.count { |trace| trace.status == "error" }.to_f / @traces.size) * 100.0).round(2)
+        else
+          0.0
+        end
+      }
+      @hourly = @traces.group_by { |trace| trace.started_at&.beginning_of_hour }.sort_by { |hour, _| hour || Time.at(0) }.last(24).map do |hour, rows|
+        bucket_durations = rows.filter_map do |trace|
+          next unless trace.started_at && trace.finished_at
+
+          ((trace.finished_at - trace.started_at) * 1000.0).round(2)
+        end.sort
+        {
+          hour: hour,
+          count: rows.size,
+          error_count: rows.count { |trace| trace.status == "error" },
+          p95_ms: percentile(bucket_durations, 0.95)
+        }
+      end
     end
 
     def show
@@ -237,6 +280,7 @@ module SolidEvents
         {
           name: name,
           source: source,
+          link: hot_path_path(name: name, source: source),
           count: durations.size,
           p50_ms: percentile(durations, 0.50),
           p95_ms: percentile(durations, 0.95),
@@ -318,6 +362,26 @@ module SolidEvents
         .limit(15)
         .map { |summary| {fingerprint: summary.error_fingerprint, source: summary.source, trace_id: summary.trace_id} }
         .uniq { |entry| entry[:fingerprint] }
+    end
+
+    def load_slo_panel(scope)
+      traces = scope.limit(500)
+      durations = traces.filter_map do |trace|
+        next unless trace.started_at && trace.finished_at
+
+        ((trace.finished_at - trace.started_at) * 1000.0).round(2)
+      end.sort
+
+      @slo_panel = {
+        throughput: traces.size,
+        error_rate_pct: if traces.any?
+          ((traces.count { |trace| trace.status == "error" }.to_f / traces.size) * 100.0).round(2)
+        else
+          0.0
+        end,
+        p95_ms: percentile(durations, 0.95),
+        p99_ms: percentile(durations, 0.99)
+      }
     end
   end
 end

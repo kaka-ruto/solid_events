@@ -42,6 +42,7 @@ Stop renting your data.
 - **🎯 Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
 - **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
 - **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
+- **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -156,6 +157,10 @@ SolidEvents.configure do |config|
   # 9. Redaction policy
   config.sensitive_keys += ["customer_email", "phone_number"]
   config.redaction_placeholder = "[FILTERED]"
+
+  # 10. Wide-event primary mode
+  config.wide_event_primary = true
+  config.persist_sub_events = false
 end
 ```
 
@@ -199,6 +204,8 @@ end
 - **Related Trace Exploration:** Jump from one trace to all traces sharing the same entity or error fingerprint.
 - **Regression Surfacing:** Index highlights latency regressions and newly-seen error fingerprints.
 - **Hot Paths & Percentiles:** Automatic p50/p95/p99 and error-rate visibility for top paths/jobs.
+- **SLO Panels:** Throughput + error rate + p95/p99 at a glance for the active filter window.
+- **Hot Path Drilldown:** Hourly p95 and recent failing traces for a selected route/job.
 - **Deploy-Aware Error Detection:** Highlights fingerprints unique to current deploy/version.
 
 ---

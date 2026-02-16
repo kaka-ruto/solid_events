@@ -48,6 +48,7 @@ module SolidEvents
       get "/solid_events"
       assert_response :success
       assert_includes @response.body, "Context Graph"
+      assert_includes @response.body, "Throughput"
       assert_includes @response.body, "Hot Paths"
       assert_includes @response.body, "Regression Candidates"
       assert_includes @response.body, "New Error Fingerprints"
@@ -77,6 +78,11 @@ module SolidEvents
       assert_includes @response.body, "Open all traces for this request id"
       assert_includes @response.body, related_trace.name
       assert_includes @response.body, "/solid_errors/123"
+
+      get "/solid_events/hot_path", params: {name: trace.name, source: trace.source, window: "7d"}
+      assert_response :success
+      assert_includes @response.body, "Hot Path Drilldown"
+      assert_includes @response.body, "Hourly Buckets"
     end
   end
 end

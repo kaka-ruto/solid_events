@@ -1,0 +1,63 @@
+<div class="card">
+  <div class="trace-header">
+    <h2>Hot Path Drilldown</h2>
+    <%= link_to "Back to Traces", traces_path, class: "button button-muted" %>
+  </div>
+  <p>
+    Name: <strong><%= @name %></strong> |
+    Source: <strong><%= @source %></strong> |
+    Window: <strong><%= @window %></strong>
+  </p>
+</div>
+
+<div class="stats-grid">
+  <div class="card stat"><span class="label">Count</span><strong><%= @latency_stats[:count] %></strong></div>
+  <div class="card stat"><span class="label">P50</span><strong><%= @latency_stats[:p50_ms] || "n/a" %> ms</strong></div>
+  <div class="card stat"><span class="label">P95</span><strong><%= @latency_stats[:p95_ms] || "n/a" %> ms</strong></div>
+  <div class="card stat"><span class="label">P99</span><strong><%= @latency_stats[:p99_ms] || "n/a" %> ms</strong></div>
+  <div class="card stat"><span class="label">Error Rate</span><strong><%= @latency_stats[:error_rate_pct] %>%</strong></div>
+</div>
+
+<div class="card">
+  <h3>Hourly Buckets (latest 24)</h3>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Hour</th>
+          <th>Count</th>
+          <th>Errors</th>
+          <th>P95</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @hourly.each do |bucket| %>
+          <tr>
+            <td><%= bucket[:hour] ? absolute_time(bucket[:hour]) : "n/a" %></td>
+            <td><%= bucket[:count] %></td>
+            <td><%= bucket[:error_count] %></td>
+            <td><%= bucket[:p95_ms] || "n/a" %> ms</td>
+          </tr>
+        <% end %>
+        <% if @hourly.empty? %>
+          <tr><td colspan="4" class="muted">No buckets available.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Recent Failing Traces</h3>
+  <ul>
+    <% @traces.select { |trace| trace.status == "error" }.first(20).each do |trace| %>
+      <li>
+        <%= link_to "Trace ##{trace.id}", trace_path(trace) %>
+        (<%= relative_time(trace.started_at) %>)
+      </li>
+    <% end %>
+    <% if @traces.none? { |trace| trace.status == "error" } %>
+      <li class="muted">No failing traces in this window.</li>
+    <% end %>
+  </ul>
+</div>

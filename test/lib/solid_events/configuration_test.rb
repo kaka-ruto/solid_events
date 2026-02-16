@@ -63,6 +63,8 @@ module SolidEvents
       assert_predicate configuration.environment_name, :present?
       assert_includes configuration.sensitive_keys, "password"
       assert_equal "[REDACTED]", configuration.redaction_placeholder
+      assert_equal false, configuration.wide_event_primary
+      assert_equal true, configuration.persist_sub_events
     end
   end
 end

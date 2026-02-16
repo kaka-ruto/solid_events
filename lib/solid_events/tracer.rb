@@ -18,6 +18,7 @@ module SolidEvents
         started_at: Time.current
       )
       SolidEvents::Current.trace = trace
+      SolidEvents::Current.trace_metrics = default_trace_metrics
       trace
     end
 
@@ -39,12 +40,14 @@ module SolidEvents
       unless keep_trace?(trace, context: final_context)
         trace.destroy!
         SolidEvents::Current.trace = nil
+        SolidEvents::Current.trace_metrics = {}
         return nil
       end
 
       upsert_summary!(trace)
       emit_canonical_log_line!(trace)
       SolidEvents::Current.trace = nil
+      SolidEvents::Current.trace_metrics = {}
       trace
     end
 
@@ -54,13 +57,27 @@ module SolidEvents
       trace = current_trace
       return unless trace
 
-      trace.events.create!(
-        event_type: event_type,
-        name: name,
-        payload: redact_hash(normalize_context(payload)),
-        duration_ms: duration_ms,
-        occurred_at: Time.current
-      )
+      metrics = SolidEvents::Current.trace_metrics
+      if metrics.blank?
+        metrics = default_trace_metrics
+      end
+      metrics["event_count"] += 1
+      metrics["event_counts"][event_type] = metrics["event_counts"].fetch(event_type, 0) + 1
+      if event_type.to_s == "sql"
+        metrics["sql_count"] += 1
+        metrics["sql_duration_ms"] += duration_ms.to_f
+      end
+      SolidEvents::Current.trace_metrics = metrics
+
+      if !SolidEvents.wide_event_primary? || SolidEvents.persist_sub_events?
+        trace.events.create!(
+          event_type: event_type,
+          name: name,
+          payload: redact_hash(normalize_context(payload)),
+          duration_ms: duration_ms,
+          occurred_at: Time.current
+        )
+      end
       upsert_summary!(trace)
     end
 
@@ -235,7 +252,7 @@ module SolidEvents
       http_status = context["status"].presence&.to_i
 
       summary = SolidEvents::Summary.find_or_initialize_by(trace_id: trace.id)
-      sql_scope = trace.events.where(event_type: "sql")
+      metrics = aggregate_metrics_for(trace)
       summary.assign_attributes(
         name: trace.name,
         trace_type: trace.trace_type,
@@ -258,16 +275,16 @@ module SolidEvents
         started_at: trace.started_at,
         finished_at: trace.finished_at,
         duration_ms: trace.finished_at && trace.started_at ? ((trace.finished_at - trace.started_at) * 1000.0).round(2) : nil,
-        event_count: trace.events.count,
-        sql_count: sql_scope.count,
-        sql_duration_ms: sql_scope.sum(:duration_ms).to_f.round(2),
+        event_count: metrics[:event_count],
+        sql_count: metrics[:sql_count],
+        sql_duration_ms: metrics[:sql_duration_ms],
         record_link_count: trace.record_links.count,
         error_count: trace.error_links.count,
         user_id: context["user_id"],
         account_id: context["account_id"],
         error_fingerprint: context["error_fingerprint"],
         payload: {
-          event_counts: trace.events.group(:event_type).count,
+          event_counts: metrics[:event_counts],
           error_link_ids: trace.error_links.pluck(:solid_error_id),
           context: context
         }
@@ -401,6 +418,36 @@ module SolidEvents
 
     def root_cause(exception)
       exception_chain(exception).last || exception
+    end
+
+    def default_trace_metrics
+      {
+        "event_count" => 0,
+        "sql_count" => 0,
+        "sql_duration_ms" => 0.0,
+        "event_counts" => {}
+      }
+    end
+
+    def aggregate_metrics_for(trace)
+      current = SolidEvents::Current.trace
+      metrics = SolidEvents::Current.trace_metrics
+      if current && current.id == trace.id && metrics.present?
+        return {
+          event_count: metrics["event_count"].to_i,
+          sql_count: metrics["sql_count"].to_i,
+          sql_duration_ms: metrics["sql_duration_ms"].to_f.round(2),
+          event_counts: metrics["event_counts"].to_h
+        }
+      end
+
+      sql_scope = trace.events.where(event_type: "sql")
+      {
+        event_count: trace.events.count,
+        sql_count: sql_scope.count,
+        sql_duration_ms: sql_scope.sum(:duration_ms).to_f.round(2),
+        event_counts: trace.events.group(:event_type).count
+      }
     end
 
     def redact_hash(value)

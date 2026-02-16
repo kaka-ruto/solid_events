@@ -30,7 +30,7 @@ module SolidEvents
                   :tail_sample_slow_ms, :always_sample_context_keys, :always_sample_when,
                   :emit_canonical_log_line, :service_name, :service_version,
                   :deployment_id, :environment_name, :region, :sensitive_keys,
-                  :redaction_placeholder
+                  :redaction_placeholder, :wide_event_primary, :persist_sub_events
     attr_reader :ignore_models
 
     def initialize
@@ -64,6 +64,8 @@ module SolidEvents
         encrypted encrypted_password credit_card card_number cvv ssn otp
       ]
       @redaction_placeholder = "[REDACTED]"
+      @wide_event_primary = false
+      @persist_sub_events = true
       @retention_period = 30.days
     end
 

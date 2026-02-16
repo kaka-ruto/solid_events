@@ -310,5 +310,33 @@ module SolidEvents
       SolidEvents.configuration.sensitive_keys = previous_sensitive_keys
       SolidEvents.configuration.redaction_placeholder = previous_placeholder
     end
+
+    test "wide event primary mode can skip sub-event rows while preserving summary metrics" do
+      previous_wide = SolidEvents.configuration.wide_event_primary
+      previous_persist = SolidEvents.configuration.persist_sub_events
+      SolidEvents.configuration.wide_event_primary = true
+      SolidEvents.configuration.persist_sub_events = false
+
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "orders.index",
+        trace_type: "request",
+        source: "OrdersController#index",
+        context: {request_id: "req-wide"}
+      )
+
+      SolidEvents::Tracer.record_event!(event_type: "sql", name: "SELECT", payload: {sql: "select 1"}, duration_ms: 4.2)
+      SolidEvents::Tracer.record_event!(event_type: "controller", name: "OrdersController#index", payload: {}, duration_ms: 10.0)
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      trace.reload
+      assert_equal 0, trace.events.count
+      assert_equal 2, trace.summary.event_count
+      assert_equal 1, trace.summary.sql_count
+      assert_equal 4.2, trace.summary.sql_duration_ms
+      assert_equal({"sql" => 1, "controller" => 1}, trace.summary.payload["event_counts"])
+    ensure
+      SolidEvents.configuration.wide_event_primary = previous_wide
+      SolidEvents.configuration.persist_sub_events = previous_persist
+    end
   end
 end

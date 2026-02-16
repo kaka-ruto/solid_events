@@ -104,5 +104,13 @@ module SolidEvents
     def redaction_placeholder
       configuration.redaction_placeholder.to_s
     end
+
+    def wide_event_primary?
+      !!configuration.wide_event_primary
+    end
+
+    def persist_sub_events?
+      !!configuration.persist_sub_events
+    end
   end
 end
