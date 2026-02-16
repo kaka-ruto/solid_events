@@ -20,6 +20,8 @@ module SolidEvents
       @entity_id = params[:entity_id].to_s.strip
       @error_fingerprint = params[:error_fingerprint].to_s.strip
       @request_id = params[:request_id].to_s.strip
+      @feature_key = params[:feature_key].to_s.strip
+      @feature_value = params[:feature_value].to_s.strip
       @min_duration_ms = params[:min_duration_ms].to_s.strip
       @window = params[:window].to_s.presence || "24h"
       @page = [params[:page].to_i, 1].max
@@ -36,6 +38,7 @@ module SolidEvents
       scope = apply_entity_filters(scope)
       scope = apply_error_fingerprint_filter(scope)
       scope = apply_request_id_filter(scope)
+      scope = apply_feature_slice_filter(scope)
       scope = apply_min_duration_filter(scope)
 
       if @query.present?
@@ -184,6 +187,18 @@ module SolidEvents
       end
 
       apply_context_key_filter(scope, "request_id", @request_id)
+    end
+
+    def apply_feature_slice_filter(scope)
+      return scope if @feature_key.blank? || @feature_value.blank?
+      return scope unless SolidEvents.feature_slice_keys.include?(@feature_key)
+
+      if summary_table_available?
+        return scope.left_outer_joins(:summary)
+          .where("CAST(solid_events_summaries.payload AS TEXT) LIKE ?", "%\"#{@feature_key}\":\"#{@feature_value}\"%")
+      end
+
+      apply_context_key_filter(scope, @feature_key, @feature_value)
     end
 
     def set_trace

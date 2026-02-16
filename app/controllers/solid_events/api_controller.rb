@@ -98,6 +98,7 @@ module SolidEvents
         scope = scope.where("solid_events_summaries.entity_type ILIKE ?", "%#{params[:entity_type]}%") if params[:entity_type].present?
         scope = scope.where(solid_events_summaries: {entity_id: params[:entity_id].to_i}) if params[:entity_id].present?
       end
+      scope = apply_feature_slice_filter(scope)
 
       scope = apply_cursor(scope)
       traces = scope.includes(:summary).limit(limit_param)
@@ -419,7 +420,27 @@ module SolidEvents
       scope = SolidEvents::Summary.all
       scope = scope.where(environment_name: params[:environment_name]) if params[:environment_name].present?
       scope = scope.where(service_name: params[:service_name]) if params[:service_name].present?
+      scope = apply_feature_slice_filter_to_summaries(scope)
       scope
+    end
+
+    def apply_feature_slice_filter(scope)
+      feature_key = params[:feature_key].to_s
+      feature_value = params[:feature_value].to_s
+      return scope if feature_key.blank? || feature_value.blank?
+      return scope unless SolidEvents.feature_slice_keys.include?(feature_key)
+
+      scope.left_outer_joins(:summary)
+        .where("CAST(solid_events_summaries.payload AS TEXT) LIKE ?", "%\"#{feature_key}\":\"#{feature_value}\"%")
+    end
+
+    def apply_feature_slice_filter_to_summaries(scope)
+      feature_key = params[:feature_key].to_s
+      feature_value = params[:feature_value].to_s
+      return scope if feature_key.blank? || feature_value.blank?
+      return scope unless SolidEvents.feature_slice_keys.include?(feature_key)
+
+      scope.where("CAST(solid_events_summaries.payload AS TEXT) LIKE ?", "%\"#{feature_key}\":\"#{feature_value}\"%")
     end
 
     def window_start_for_metrics

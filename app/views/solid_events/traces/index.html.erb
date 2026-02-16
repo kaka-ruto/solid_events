@@ -43,6 +43,14 @@
         <%= f.text_field :request_id, value: @request_id, placeholder: "uuid..." %>
       </div>
       <div>
+        <%= f.label :feature_key, "Feature key" %>
+        <%= f.select :feature_key, options_for_select([["Any", ""]] + SolidEvents.feature_slice_keys.map { |key| [key, key] }, @feature_key) %>
+      </div>
+      <div>
+        <%= f.label :feature_value, "Feature value" %>
+        <%= f.text_field :feature_value, value: @feature_value, placeholder: "e.g. premium_checkout" %>
+      </div>
+      <div>
         <%= f.label :window, "Time window" %>
         <%= f.select :window, options_for_select([["1 hour", "1h"], ["24 hours", "24h"], ["7 days", "7d"], ["All", "all"]], @window) %>
       </div>

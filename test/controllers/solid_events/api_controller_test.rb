@@ -128,6 +128,30 @@ module SolidEvents
       refute_includes ids, newer.id
     end
 
+    test "traces endpoint can filter by configured feature slice" do
+      create_summary_for_metrics(source: "CheckoutController#create", context: {"feature_flag" => "checkout_v2"})
+      create_summary_for_metrics(source: "OrdersController#create", context: {"feature_flag" => "orders_v1"})
+
+      get "/solid_events/api/traces", params: {feature_key: "feature_flag", feature_value: "checkout_v2"}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      data = payload.fetch("data")
+      assert_equal 1, data.size
+      assert_equal "CheckoutController#create", data.first["source"]
+    end
+
+    test "metrics endpoints can filter by configured feature slice" do
+      create_summary_for_metrics(source: "CheckoutController#create", status: "error", context: {"feature_flag" => "checkout_v2"})
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", context: {"feature_flag" => "checkout_v2"})
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", context: {"feature_flag" => "checkout_v1"})
+
+      get "/solid_events/api/metrics/error_rates", params: {dimension: "source", feature_key: "feature_flag", feature_value: "checkout_v2"}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      group = payload.fetch("groups").find { |row| row["value"] == "CheckoutController#create" }
+      assert_equal 50.0, group["error_rate_pct"]
+    end
+
     test "incident lifecycle endpoints update status" do
       incident = SolidEvents::Incident.create!(
         kind: "error_spike",

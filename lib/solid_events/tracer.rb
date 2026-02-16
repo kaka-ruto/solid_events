@@ -253,6 +253,7 @@ module SolidEvents
 
       summary = SolidEvents::Summary.find_or_initialize_by(trace_id: trace.id)
       metrics = aggregate_metrics_for(trace)
+      feature_slices = extract_feature_slices(context)
       summary.assign_attributes(
         name: trace.name,
         trace_type: trace.trace_type,
@@ -287,7 +288,8 @@ module SolidEvents
         payload: {
           event_counts: metrics[:event_counts],
           error_link_ids: trace.error_links.pluck(:solid_error_id),
-          context: context
+          context: context,
+          feature_slices: feature_slices
         }
       )
       summary.save!
@@ -323,6 +325,15 @@ module SolidEvents
       rand < sample_rate
     rescue StandardError
       true
+    end
+
+    def extract_feature_slices(context)
+      SolidEvents.feature_slice_keys.each_with_object({}) do |key, memo|
+        value = context[key]
+        memo[key] = value.to_s if value.present?
+      end
+    rescue StandardError
+      {}
     end
 
     def emit_canonical_log_line!(trace)

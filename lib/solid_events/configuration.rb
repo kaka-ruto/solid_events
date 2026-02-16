@@ -35,7 +35,7 @@ module SolidEvents
                   :incident_error_spike_threshold_pct, :incident_p95_regression_factor,
                   :incident_min_samples, :incident_dedupe_window,
                   :incident_suppression_rules, :incident_notifier, :api_token,
-                  :evaluate_incidents_on_request
+                  :evaluate_incidents_on_request, :feature_slice_keys
     attr_reader :ignore_models
 
     def initialize
@@ -79,6 +79,7 @@ module SolidEvents
       @incident_notifier = nil
       @api_token = ENV["SOLID_EVENTS_API_TOKEN"]
       @evaluate_incidents_on_request = true
+      @feature_slice_keys = %w[feature_flag experiment release_channel plan]
       @retention_period = 30.days
       @error_retention_period = 90.days
       @incident_retention_period = 180.days

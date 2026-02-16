@@ -47,6 +47,7 @@ module SolidEvents
           user_id: summary.user_id,
           account_id: summary.account_id,
           error_fingerprint: summary.error_fingerprint,
+          feature_slices: summary.payload.to_h["feature_slices"].to_h,
           payload: summary.payload.to_h
         }
       end
@@ -64,6 +65,7 @@ module SolidEvents
         event_counts: events.group(:event_type).count,
         record_link_count: record_links.count,
         error_link_ids: error_links.pluck(:solid_error_id),
+        feature_slices: SolidEvents.feature_slice_keys.each_with_object({}) { |key, memo| memo[key] = context[key] if context[key].present? },
         context: context.to_h
       }
     end

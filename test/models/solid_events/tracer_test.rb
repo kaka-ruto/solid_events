@@ -99,7 +99,9 @@ module SolidEvents
           environment_name: "production",
           service_version: "2026.02.16",
           deployment_id: "deploy-1",
-          region: "us-east-1"
+          region: "us-east-1",
+          plan: "premium",
+          experiment: "checkout_v2"
         }
       )
 
@@ -135,6 +137,8 @@ module SolidEvents
       assert_equal "deploy-1", trace.summary.deployment_id
       assert_equal "us-east-1", trace.summary.region
       assert_equal "1", trace.summary.schema_version
+      assert_equal "premium", trace.summary.payload["feature_slices"]["plan"]
+      assert_equal "checkout_v2", trace.summary.payload["feature_slices"]["experiment"]
     end
 
     test "does not link ignored model prefixes" do

@@ -75,6 +75,9 @@ module SolidEvents
       assert_equal [], configuration.incident_suppression_rules
       assert_nil configuration.incident_notifier
       assert_equal true, configuration.evaluate_incidents_on_request
+      assert_includes configuration.feature_slice_keys, "feature_flag"
+      assert_includes configuration.feature_slice_keys, "experiment"
+      assert_includes configuration.feature_slice_keys, "release_channel"
       if ENV["SOLID_EVENTS_API_TOKEN"].nil?
         assert_nil configuration.api_token
       else

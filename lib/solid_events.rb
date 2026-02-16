@@ -153,6 +153,10 @@ module SolidEvents
       !!configuration.evaluate_incidents_on_request
     end
 
+    def feature_slice_keys
+      Array(configuration.feature_slice_keys).map(&:to_s)
+    end
+
     def canonical_schema_version
       "1"
     end

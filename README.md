@@ -174,16 +174,19 @@ SolidEvents.configure do |config|
   config.sensitive_keys += ["customer_email", "phone_number"]
   config.redaction_placeholder = "[FILTERED]"
 
-  # 10. Wide-event primary mode
+  # 10. Feature slice dimensions captured into canonical payloads
+  config.feature_slice_keys = %w[feature_flag experiment release_channel plan]
+
+  # 11. Wide-event primary mode
   config.wide_event_primary = true
   config.persist_sub_events = false
 
-  # 11. Retention tiers
+  # 12. Retention tiers
   config.retention_period = 30.days
   config.error_retention_period = 90.days
   config.incident_retention_period = 180.days
 
-  # 12. Optional Slack incident notifier
+  # 13. Optional Slack incident notifier
   # config.incident_notifier = SolidEvents::Notifiers::SlackWebhookNotifier.new(
   #   webhook_url: ENV.fetch("SOLID_EVENTS_SLACK_WEBHOOK_URL"),
   #   channel: "#incidents"
@@ -225,7 +228,9 @@ with `resolved_by` and `resolution_note`.
 - `GET /solid_events/api/traces?error_fingerprint=...`
 - `GET /solid_events/api/traces?entity_type=Order&entity_id=123`
 - `GET /solid_events/api/traces?limit=50&cursor=456`
+- `GET /solid_events/api/traces?feature_key=feature_flag&feature_value=checkout_v2`
 - `GET /solid_events/api/metrics/error_rates?dimension=source&window=24h`
+- `GET /solid_events/api/metrics/error_rates?dimension=source&feature_key=feature_flag&feature_value=checkout_v2`
 - `GET /solid_events/api/metrics/latency?dimension=deployment_id&window=7d`
 - `GET /solid_events/api/metrics/compare?metric=error_rate&dimension=source&window=24h`
 - `GET /solid_events/api/metrics/cohorts?cohort_key=plan&metric=error_rate&window=24h`

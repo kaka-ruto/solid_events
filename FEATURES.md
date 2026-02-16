@@ -57,7 +57,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Show hot paths and regression candidates from summary data
 - [x] Show “new fingerprint” insights (including since deploy/version)
 - [x] Built-in cohort analytics (e.g., premium vs non-premium) without custom SQL
-- [ ] Built-in feature-flag/experiment slice analytics without custom SQL
+- [x] Built-in feature-flag/experiment slice analytics without custom SQL
 - [ ] Built-in endpoint for “top failing user journeys” (multi-trace sequence view)
 
 ## 5) Incident state management (within observability scope)

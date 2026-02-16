@@ -143,6 +143,32 @@ module SolidEvents
       assert_includes @response.body, "CheckoutController#create"
     end
 
+    test "index supports feature slice filters" do
+      trace = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "ok",
+        started_at: Time.current
+      )
+      trace.create_summary!(
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: trace.source,
+        status: trace.status,
+        started_at: trace.started_at,
+        finished_at: trace.started_at + 1.minute,
+        duration_ms: 120.0,
+        payload: {"feature_slices" => {"feature_flag" => "checkout_v2"}}
+      )
+
+      get "/solid_events", params: {feature_key: "feature_flag", feature_value: "checkout_v2"}
+      assert_response :success
+      assert_includes @response.body, "checkout_v2"
+      assert_includes @response.body, "Feature key"
+      assert_includes @response.body, "Feature value"
+    end
+
     test "can disable request-time incident evaluation" do
       previous = SolidEvents.configuration.evaluate_incidents_on_request
       SolidEvents.configuration.evaluate_incidents_on_request = false
