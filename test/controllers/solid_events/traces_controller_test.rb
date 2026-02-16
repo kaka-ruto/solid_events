@@ -44,12 +44,23 @@ module SolidEvents
         record_link_count: 0,
         error_count: 1
       )
+      SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: trace.source,
+        name: trace.name,
+        payload: {trace_query: {name: trace.name, source: trace.source}},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
 
       get "/solid_events"
       assert_response :success
       assert_includes @response.body, "Context Graph"
       assert_includes @response.body, "Incidents Feed"
       assert_includes @response.body, "Actions"
+      assert_includes @response.body, "Open traces"
       assert_includes @response.body, "Throughput"
       assert_includes @response.body, "Hot Paths"
       assert_includes @response.body, "Regression Candidates"

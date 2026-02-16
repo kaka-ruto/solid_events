@@ -2,6 +2,8 @@
 
 module SolidEvents
   class ApiController < ApplicationController
+    before_action :authenticate_api!
+
     def incidents
       incidents = if incident_table_available?
         scope = SolidEvents::Incident.recent
@@ -14,6 +16,33 @@ module SolidEvents
       end
 
       render json: incidents.map { |incident| serialize_incident(incident) }
+    end
+
+    def incident_traces
+      incident = SolidEvents::Incident.find(params[:id])
+      traces = incident_related_traces(incident).limit(limit_param)
+      render json: {
+        incident: serialize_incident(incident),
+        traces: traces.map(&:canonical_event)
+      }
+    end
+
+    def acknowledge_incident
+      incident = SolidEvents::Incident.find(params[:id])
+      incident.acknowledge!
+      render json: serialize_incident(incident)
+    end
+
+    def resolve_incident
+      incident = SolidEvents::Incident.find(params[:id])
+      incident.resolve!
+      render json: serialize_incident(incident)
+    end
+
+    def reopen_incident
+      incident = SolidEvents::Incident.find(params[:id])
+      incident.reopen!
+      render json: serialize_incident(incident)
     end
 
     def trace
@@ -61,6 +90,33 @@ module SolidEvents
       }
     end
 
+    def incident_related_traces(incident)
+      scope = SolidEvents::Trace.recent.includes(:summary)
+      query = incident.payload.to_h["trace_query"].to_h
+      trace_ids = Array(incident.payload.to_h["trace_ids"]).map(&:to_i).uniq
+
+      if trace_ids.any?
+        return scope.where(id: trace_ids)
+      end
+
+      if query["error_fingerprint"].present?
+        scope = scope.left_outer_joins(:summary).where(solid_events_summaries: {error_fingerprint: query["error_fingerprint"]})
+      end
+      if query["name"].present?
+        scope = scope.where(name: query["name"])
+      end
+      if query["source"].present?
+        scope = scope.where(source: query["source"])
+      end
+      if query["entity_type"].present? || query["entity_id"].present?
+        scope = scope.left_outer_joins(:summary)
+        scope = scope.where(solid_events_summaries: {entity_type: query["entity_type"]}) if query["entity_type"].present?
+        scope = scope.where(solid_events_summaries: {entity_id: query["entity_id"].to_i}) if query["entity_id"].present?
+      end
+
+      scope
+    end
+
     def incident_table_available?
       SolidEvents::Incident.connection.data_source_exists?(SolidEvents::Incident.table_name)
     rescue StandardError
@@ -73,6 +129,21 @@ module SolidEvents
       [[params[:limit].to_i, 1].max, 200].min
     rescue StandardError
       50
+    end
+
+    def authenticate_api!
+      token = SolidEvents.api_token.to_s
+      return if token.blank?
+
+      presented = request.headers["X-Solid-Events-Token"].to_s
+      auth_header = request.headers["Authorization"].to_s
+      bearer = auth_header.start_with?("Bearer ") ? auth_header.delete_prefix("Bearer ").strip : ""
+      return if ActiveSupport::SecurityUtils.secure_compare(presented, token)
+      return if ActiveSupport::SecurityUtils.secure_compare(bearer, token)
+
+      render json: {error: "unauthorized"}, status: :unauthorized
+    rescue StandardError
+      render json: {error: "unauthorized"}, status: :unauthorized
     end
   end
 end

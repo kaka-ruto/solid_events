@@ -45,6 +45,7 @@ Stop renting your data.
 - **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
 - **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
 - **🤖 Agent APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
+- **🔐 API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -198,9 +199,13 @@ SolidEvents.annotate!(
 The mounted engine includes JSON endpoints for automation/agents:
 
 - `GET /solid_events/api/incidents?status=active&limit=50`
+- `GET /solid_events/api/incidents/:id/traces`
+- `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
 - `GET /solid_events/api/traces/:id`
 - `GET /solid_events/api/traces?error_fingerprint=...`
 - `GET /solid_events/api/traces?entity_type=Order&entity_id=123`
+
+Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 
 ---
 

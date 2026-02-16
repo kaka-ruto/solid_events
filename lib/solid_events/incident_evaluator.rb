@@ -46,6 +46,8 @@ module SolidEvents
             fingerprint: summary.error_fingerprint,
             payload: {
               trace_id: summary.trace_id,
+              trace_ids: [summary.trace_id],
+              trace_query: {error_fingerprint: summary.error_fingerprint},
               first_seen_at: summary.started_at,
               detected_window: "last_1h",
               evidence: "fingerprint not present in previous 14d"
@@ -71,7 +73,9 @@ module SolidEvents
               error_rate_pct: error_rate.round(2),
               sample_size: rows.size,
               threshold_pct: SolidEvents.incident_error_spike_threshold_pct,
-              window: "24h"
+              window: "24h",
+              trace_ids: evidence_trace_ids_for(name: name, source: source),
+              trace_query: {name: name, source: source}
             }
           )
         end
@@ -105,7 +109,9 @@ module SolidEvents
               factor: (recent_p95 / baseline_p95).round(2),
               threshold_factor: SolidEvents.incident_p95_regression_factor,
               recent_window: "last_1h",
-              baseline_window: "last_7d_excluding_1h"
+              baseline_window: "last_7d_excluding_1h",
+              trace_ids: evidence_trace_ids_for(name: name, source: source),
+              trace_query: {name: name, source: source}
             }
           )
         end
@@ -128,6 +134,14 @@ module SolidEvents
 
         index = (ratio * (sorted_values.length - 1)).ceil
         sorted_values[index].to_f.round(2)
+      end
+
+      def evidence_trace_ids_for(name:, source:)
+        SolidEvents::Summary
+          .where(name: name, source: source, started_at: 24.hours.ago..Time.current)
+          .order(started_at: :desc)
+          .limit(20)
+          .pluck(:trace_id)
       end
 
       def upsert_incident!(kind:, severity:, source:, name:, fingerprint: nil, payload:)

@@ -34,7 +34,7 @@ module SolidEvents
                   :redaction_placeholder, :wide_event_primary, :persist_sub_events,
                   :incident_error_spike_threshold_pct, :incident_p95_regression_factor,
                   :incident_min_samples, :incident_dedupe_window,
-                  :incident_suppression_rules, :incident_notifier
+                  :incident_suppression_rules, :incident_notifier, :api_token
     attr_reader :ignore_models
 
     def initialize
@@ -76,6 +76,7 @@ module SolidEvents
       @incident_dedupe_window = 1.hour
       @incident_suppression_rules = []
       @incident_notifier = nil
+      @api_token = ENV["SOLID_EVENTS_API_TOKEN"]
       @retention_period = 30.days
       @error_retention_period = 90.days
       @incident_retention_period = 180.days

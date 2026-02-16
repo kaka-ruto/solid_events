@@ -144,5 +144,9 @@ module SolidEvents
     def incident_notifier
       configuration.incident_notifier
     end
+
+    def api_token
+      configuration.api_token
+    end
   end
 end

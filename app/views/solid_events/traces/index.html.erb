@@ -129,6 +129,10 @@
             <td title="<%= absolute_time(incident.last_seen_at) %>"><%= relative_time(incident.last_seen_at) %></td>
             <td><%= incident.payload.to_h.to_json %></td>
             <td>
+              <% trace_query = incident.payload.to_h["trace_query"].to_h.symbolize_keys %>
+              <% if trace_query.present? %>
+                <%= link_to "Open traces", traces_path(trace_query), class: "button button-muted" %>
+              <% end %>
               <% if incident.status == "active" %>
                 <%= button_to "Ack", acknowledge_incident_path(incident), method: :patch, class: "button button-muted" %>
                 <%= button_to "Resolve", resolve_incident_path(incident), method: :patch, class: "button button-muted" %>

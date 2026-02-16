@@ -37,5 +37,7 @@ SolidEvents.configure do |config|
   # config.retention_period = 30.days
   # config.error_retention_period = 90.days
   # config.incident_retention_period = 180.days
+  # Protect /solid_events/api/* endpoints.
+  # config.api_token = ENV["SOLID_EVENTS_API_TOKEN"]
   config.retention_period = 30.days
 end
