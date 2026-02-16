@@ -415,6 +415,46 @@ module SolidEvents
       assert_equal 1, journey["error_count"]
     end
 
+    test "export traces endpoint returns json payload with canonical rows" do
+      create_summary_for_metrics(source: "CheckoutController#create", status: "error")
+      create_summary_for_metrics(source: "OrdersController#create", status: "ok")
+
+      get "/solid_events/api/export/traces", params: {format: "json", status: "error", limit: 10}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal "json", payload["format"]
+      assert payload["exported_at"].present?
+      assert_equal 1, payload.fetch("data").size
+      assert_equal "CheckoutController#create", payload["data"].first["source"]
+    end
+
+    test "export incidents endpoint returns json payload" do
+      SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "CheckoutController#create",
+        name: "checkout.create",
+        payload: {},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      get "/solid_events/api/export/incidents", params: {format: "json", status: "active"}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal "json", payload["format"]
+      assert_equal 1, payload.fetch("data").size
+      assert_equal "error_spike", payload["data"].first["kind"]
+    end
+
+    test "export endpoints reject non json format" do
+      get "/solid_events/api/export/traces", params: {format: "csv"}
+      assert_response :unprocessable_entity
+      payload = JSON.parse(@response.body)
+      assert_equal "only json export is supported", payload["error"]
+    end
+
     private
 
     def create_summary_for_metrics(source:, status: "ok", duration_ms: 120.0, started_at: 5.minutes.ago, context: {}, request_id: nil, entity_type: nil, entity_id: nil)

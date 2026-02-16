@@ -478,22 +478,34 @@ module SolidEvents
       }
     end
 
-    def redact_hash(value)
+    def redact_hash(value, path: [])
       case value
       when Hash
         value.each_with_object({}) do |(key, nested), output|
           key_string = key.to_s
-          if sensitive_key?(key_string)
+          current_path = path + [key_string]
+          custom_replacement = redaction_replacement_for_path(current_path)
+          if custom_replacement
+            output[key_string] = custom_replacement
+          elsif sensitive_key?(key_string)
             output[key_string] = SolidEvents.redaction_placeholder
           else
-            output[key_string] = redact_hash(nested)
+            output[key_string] = redact_hash(nested, path: current_path)
           end
         end
       when Array
-        value.map { |entry| redact_hash(entry) }
+        value.map.with_index { |entry, index| redact_hash(entry, path: path + [index.to_s]) }
       else
         value
       end
+    end
+
+    def redaction_replacement_for_path(path_segments)
+      replacement = SolidEvents.redaction_paths[path_segments.join(".")]
+      return nil if replacement.nil?
+      return SolidEvents.redaction_placeholder if replacement == true
+
+      replacement.to_s
     end
 
     def guarded_payload(value, max_bytes:)

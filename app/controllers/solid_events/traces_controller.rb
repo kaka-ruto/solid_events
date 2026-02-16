@@ -686,25 +686,18 @@ module SolidEvents
     end
 
     def lifecycle_rows_for(incident)
-      rows = []
-      rows << lifecycle_row(incident.detected_at, "detected", incident)
-      rows << lifecycle_row(incident.assigned_at, "assigned", incident) if incident.assigned_at.present?
-      rows << lifecycle_row(incident.acknowledged_at, "acknowledged", incident) if incident.acknowledged_at.present?
-      rows << lifecycle_row(incident.updated_at, "muted", incident) if incident.muted_until.present?
-      rows << lifecycle_row(incident.resolved_at, "resolved", incident) if incident.resolved_at.present?
-      rows.compact
-    end
+      events = incident.incident_events.order(:occurred_at)
+      return [] if events.empty?
 
-    def lifecycle_row(timestamp, action, incident)
-      return nil unless timestamp
-
-      {
-        at: timestamp,
-        kind: "incident",
-        label: "incident #{action}: #{incident.kind}",
-        trace_id: nil,
-        details: "status=#{incident.status} severity=#{incident.severity} id=#{incident.id}"
-      }
+      events.map do |event|
+        {
+          at: event.occurred_at,
+          kind: "incident",
+          label: "incident #{event.action}: #{incident.kind}",
+          trace_id: nil,
+          details: "status=#{incident.status} severity=#{incident.severity} id=#{incident.id} actor=#{event.actor.presence || 'system'}"
+        }
+      end
     end
   end
 end

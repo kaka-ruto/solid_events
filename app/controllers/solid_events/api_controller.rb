@@ -281,6 +281,49 @@ module SolidEvents
       render json: {window: metric_window_param, errors_only: errors_only_param?, journeys: sorted}
     end
 
+    def export_traces
+      return render json: {error: "only json export is supported"}, status: :unprocessable_entity unless export_json?
+
+      scope = SolidEvents::Trace.order(id: :desc)
+      scope = scope.where(status: params[:status]) if params[:status].in?(%w[ok error])
+      scope = scope.where("started_at >= ?", window_start_for_metrics) if params[:window].present?
+      scope = scope.left_outer_joins(:summary).where(solid_events_summaries: {error_fingerprint: params[:error_fingerprint]}) if params[:error_fingerprint].present?
+      if params[:entity_type].present? || params[:entity_id].present?
+        scope = scope.left_outer_joins(:summary)
+        scope = scope.where("solid_events_summaries.entity_type ILIKE ?", "%#{params[:entity_type]}%") if params[:entity_type].present?
+        scope = scope.where(solid_events_summaries: {entity_id: params[:entity_id].to_i}) if params[:entity_id].present?
+      end
+      scope = apply_feature_slice_filter(scope)
+      scope = apply_cursor(scope)
+
+      traces = scope.includes(:summary).limit(limit_param)
+      render json: {
+        exported_at: Time.current.iso8601,
+        format: "json",
+        filters: export_filters_payload,
+        data: traces.map(&:canonical_event)
+      }
+    end
+
+    def export_incidents
+      return render json: {error: "only json export is supported"}, status: :unprocessable_entity unless export_json?
+
+      scope = SolidEvents::Incident.order(id: :desc)
+      scope = scope.where(status: params[:status]) if params[:status].present?
+      scope = scope.where(kind: params[:kind]) if params[:kind].present?
+      scope = scope.where(severity: params[:severity]) if params[:severity].present?
+      scope = scope.where("detected_at >= ?", window_start_for_metrics) if params[:window].present?
+      scope = apply_cursor(scope)
+      incidents = scope.limit(limit_param)
+
+      render json: {
+        exported_at: Time.current.iso8601,
+        format: "json",
+        filters: export_filters_payload,
+        data: incidents.map { |incident| serialize_incident(incident) }
+      }
+    end
+
     private
 
     def serialize_incident(incident)
@@ -549,6 +592,18 @@ module SolidEvents
 
     def errors_only_param?
       ActiveModel::Type::Boolean.new.cast(params[:errors_only])
+    end
+
+    def export_json?
+      requested = params[:format].to_s
+      requested.blank? || requested == "json"
+    end
+
+    def export_filters_payload
+      params.to_unsafe_h.slice(
+        "status", "kind", "severity", "error_fingerprint", "entity_type", "entity_id",
+        "feature_key", "feature_value", "window", "request_id", "errors_only", "limit", "cursor", "format"
+      )
     end
 
     def default_metric_stats

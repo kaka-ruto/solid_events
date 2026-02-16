@@ -192,6 +192,7 @@ module SolidEvents
             attrs[:resolved_at] = nil
           end
           existing.update!(attrs)
+          existing.record_event!(action: "reopened") if attrs[:status] == "active"
           notify_incident(existing, action: :reopened) if attrs[:status] == "active"
           return existing
         end
@@ -207,6 +208,7 @@ module SolidEvents
           detected_at: Time.current,
           last_seen_at: Time.current
         )
+        incident.record_event!(action: "detected")
         notify_incident(incident, action: :created)
         incident
       end

@@ -136,6 +136,18 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_incidents, :fingerprint
   add_index :solid_events_incidents, :detected_at
 
+  create_table :solid_events_incident_events, force: :cascade do |t|
+    t.references :incident, null: false, foreign_key: {to_table: :solid_events_incidents}
+    t.string :action, null: false
+    t.string :actor
+    t.json :payload, default: {}
+    t.datetime :occurred_at, null: false
+    t.timestamps
+  end
+
+  add_index :solid_events_incident_events, :action
+  add_index :solid_events_incident_events, :occurred_at
+
   create_table :solid_events_saved_views, force: :cascade do |t|
     t.string :name, null: false
     t.json :filters, default: {}

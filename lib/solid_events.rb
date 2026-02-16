@@ -109,6 +109,10 @@ module SolidEvents
       Array(configuration.sensitive_keys).map(&:to_s)
     end
 
+    def redaction_paths
+      configuration.redaction_paths.to_h.transform_keys(&:to_s)
+    end
+
     def redaction_placeholder
       configuration.redaction_placeholder.to_s
     end

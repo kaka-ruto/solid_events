@@ -30,6 +30,9 @@ class ActiveSupport::TestCase
     if defined?(SolidEvents::SavedView) && SolidEvents::SavedView.connection.data_source_exists?(SolidEvents::SavedView.table_name)
       SolidEvents::SavedView.delete_all
     end
+    if defined?(SolidEvents::IncidentEvent) && SolidEvents::IncidentEvent.connection.data_source_exists?(SolidEvents::IncidentEvent.table_name)
+      SolidEvents::IncidentEvent.delete_all
+    end
     SolidEvents::ErrorLink.delete_all
     SolidEvents::RecordLink.delete_all
     SolidEvents::Event.delete_all

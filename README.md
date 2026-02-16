@@ -55,6 +55,7 @@ Stop renting your data.
 - **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
 - **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
 - **🧯 Payload Size Guards:** Truncates oversized context/event payloads using configurable limits.
+- **🧬 Path-Based Redaction:** Supports exact field-path redaction rules in addition to key matching.
 - **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
 - **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
 - **🤖 Consumer APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
@@ -65,6 +66,7 @@ Stop renting your data.
 - **💾 Saved Views:** Persist and re-apply investigation filters directly from the traces dashboard.
 - **🔗 Shared View Links:** Generate immutable shared-view URLs from saved filters for team handoff.
 - **🔐 API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
+- **📦 JSON Export:** Export filtered traces/incidents as JSON snapshots for handoff and auditing.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -178,6 +180,10 @@ SolidEvents.configure do |config|
 
   # 9. Redaction policy
   config.sensitive_keys += ["customer_email", "phone_number"]
+  config.redaction_paths = {
+    "payment.card.number" => "[REDACTED_CARD]",
+    "user.ssn" => true
+  }
   config.redaction_placeholder = "[FILTERED]"
   config.max_context_payload_bytes = 16_384
   config.max_event_payload_bytes = 8_192
@@ -246,6 +252,8 @@ with `resolved_by` and `resolution_note`.
 - `GET /solid_events/api/journeys?request_id=req-123&window=24h`
 - `GET /solid_events/api/journeys?entity_type=Order&entity_id=123&window=24h`
 - `GET /solid_events/api/journeys?request_id=req-123&window=24h&errors_only=true`
+- `GET /solid_events/api/export/traces?format=json&status=error&window=24h`
+- `GET /solid_events/api/export/incidents?format=json&status=active`
 
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 List endpoints return `{ data: [...], next_cursor: <id|null> }` for cursor pagination.

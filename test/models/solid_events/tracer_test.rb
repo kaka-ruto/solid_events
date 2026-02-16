@@ -346,6 +346,32 @@ module SolidEvents
       SolidEvents.configuration.max_event_payload_bytes = previous_event_max
     end
 
+    test "redacts configured nested field paths with custom placeholders" do
+      previous_paths = SolidEvents.configuration.redaction_paths
+      SolidEvents.configuration.redaction_paths = {
+        "payment.card.number" => "[CARD_REDACTED]",
+        "user.profile.ssn" => true
+      }
+
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "payment.create",
+        trace_type: "request",
+        source: "PaymentsController#create",
+        context: {
+          payment: {card: {number: "4242424242424242", last4: "4242"}},
+          user: {profile: {ssn: "123-45-6789"}}
+        }
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      trace.reload
+      assert_equal "[CARD_REDACTED]", trace.context["payment"]["card"]["number"]
+      assert_equal "[REDACTED]", trace.context["user"]["profile"]["ssn"]
+      assert_equal "4242", trace.context["payment"]["card"]["last4"]
+    ensure
+      SolidEvents.configuration.redaction_paths = previous_paths
+    end
+
     test "wide event primary mode can skip sub-event rows while preserving summary metrics" do
       previous_wide = SolidEvents.configuration.wide_event_primary
       previous_persist = SolidEvents.configuration.persist_sub_events

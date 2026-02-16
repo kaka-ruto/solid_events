@@ -81,6 +81,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Versioned/public API contract document with compatibility guarantees
 - [x] Cursor pagination for large result sets
 - [x] Prebuilt aggregate endpoints (error rates + latency aggregates by key dimensions)
+- [x] JSON export endpoints for traces/incidents with filter context
 
 ## 7) Signal quality, noise reduction, and safety
 
@@ -89,7 +90,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Tail sampling (always keep failures/slow traces, sample low-value success traffic)
 - [x] Redact sensitive keys in context/payload before persistence/log emission
 - [x] Emit canonical JSON log line per sampled trace for log pipeline compatibility
-- [ ] Configurable PII policies per field path (not just key-name matching)
+- [x] Configurable PII policies per field path (not just key-name matching)
 - [x] Optional payload truncation/size guards with visibility counters
 
 ## 8) UI workflows for investigations
@@ -127,6 +128,6 @@ Important: these are outcome examples, not a requirement to build natural-langua
 
 To align with the “Rails can already answer these questions” goal, the next major gap is:
 
-1. Saved investigation workflows (named views, shareable links, team handoff context)
-2. Timeline-style storytelling for long multi-step failures
-3. Better evidence modeling (causal links, state transitions) so external tools/people can answer questions reliably
+1. Better evidence modeling (causal links, state transitions) so external tools/people can answer questions reliably
+2. Multi-signal incident policy support (error + latency + saturation)
+3. Migration/performance guidance for production rollouts at scale

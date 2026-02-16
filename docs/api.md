@@ -106,6 +106,29 @@ This document defines the public API contract for `solid_events` engine endpoint
     - `limit`
   - Response: `{ window, errors_only, journeys: [...] }`
 
+### Exports (JSON only)
+
+- `GET /solid_events/api/export/traces`
+  - Supported params:
+    - `format=json` (required for explicit export mode)
+    - `status`
+    - `error_fingerprint`
+    - `entity_type`, `entity_id`
+    - `feature_key`, `feature_value`
+    - `window`
+    - `limit`, `cursor`
+  - Response:
+    - `{ exported_at, format: "json", filters: {...}, data: [canonical_trace...] }`
+
+- `GET /solid_events/api/export/incidents`
+  - Supported params:
+    - `format=json`
+    - `status`, `kind`, `severity`
+    - `window`
+    - `limit`, `cursor`
+  - Response:
+    - `{ exported_at, format: "json", filters: {...}, data: [incident...] }`
+
 ## Stability guidance for consumers
 
 - Prefer canonical fields from summaries/canonical events over raw event payload internals.

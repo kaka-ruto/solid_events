@@ -31,6 +31,7 @@ module SolidEvents
                   :tail_sample_slow_ms, :always_sample_context_keys, :always_sample_when,
                   :emit_canonical_log_line, :service_name, :service_version,
                   :deployment_id, :environment_name, :region, :sensitive_keys,
+                  :redaction_paths,
                   :redaction_placeholder, :wide_event_primary, :persist_sub_events,
                   :incident_error_spike_threshold_pct, :incident_p95_regression_factor,
                   :incident_min_samples, :incident_dedupe_window,
@@ -70,6 +71,7 @@ module SolidEvents
         authorization cookie session csrf authenticity_token api_key private_key
         encrypted encrypted_password credit_card card_number cvv ssn otp
       ]
+      @redaction_paths = {}
       @redaction_placeholder = "[REDACTED]"
       @max_context_payload_bytes = 16_384
       @max_event_payload_bytes = 8_192

@@ -156,23 +156,24 @@ module SolidEvents
       incident = SolidEvents::Incident.create!(
         kind: "error_spike",
         severity: "critical",
-        status: "resolved",
+        status: "active",
         source: trace.source,
         name: trace.name,
         payload: {},
         detected_at: 3.minutes.ago,
-        last_seen_at: 2.minutes.ago,
-        assigned_at: 2.minutes.ago,
-        acknowledged_at: 90.seconds.ago,
-        resolved_at: 30.seconds.ago
+        last_seen_at: 2.minutes.ago
       )
-      incident.update!(muted_until: 10.minutes.from_now)
+      incident.record_event!(action: "detected")
+      incident.acknowledge!
+      incident.resolve!
+      incident.reopen!
 
       get "/solid_events/timeline", params: {request_id: "req-lifecycle-1", window: "24h"}
       assert_response :success
       assert_includes @response.body, "incident detected: error_spike"
       assert_includes @response.body, "incident acknowledged: error_spike"
       assert_includes @response.body, "incident resolved: error_spike"
+      assert_includes @response.body, "incident reopened: error_spike"
     end
 
     test "index compare panel supports custom windows and metrics" do
