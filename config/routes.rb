@@ -12,6 +12,9 @@ SolidEvents::Engine.routes.draw do
   patch "api/incidents/:id/reopen", to: "api#reopen_incident"
   get "api/traces/:id", to: "api#trace", as: :api_trace
   get "api/traces", to: "api#traces"
+  get "api/metrics/error_rates", to: "api#error_rates"
+  get "api/metrics/latency", to: "api#latency"
+  get "api/metrics/compare", to: "api#compare_metrics"
   resources :incidents, only: [] do
     member do
       patch :acknowledge

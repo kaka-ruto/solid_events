@@ -6,6 +6,17 @@
 
 By storing traces in your own database (PostgreSQL/SQLite), `SolidEvents` eliminates the need for expensive external observability tools (Datadog, New Relic) while enabling deeper, context-aware AI debugging.
 
+## Scope
+
+`SolidEvents` is strictly for observability and incident state:
+
+- Detect incidents from canonical event/tracing data
+- Store traces, events, summaries, and incident lifecycle state
+- Expose that data through UI and APIs for humans and tools
+- Manage incident state transitions (acknowledge, resolve, reopen, assign, mute)
+
+It does **not** execute automation workflows (code fixes, PR creation, QA runs). That belongs in `solid_agents`.
+
 ---
 
 ## 🧐 The "Why"
@@ -45,7 +56,7 @@ Stop renting your data.
 - **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
 - **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
 - **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
-- **🤖 Agent APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
+- **🤖 Consumer APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
 - **🔐 API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
@@ -211,6 +222,9 @@ with `resolved_by` and `resolution_note`.
 - `GET /solid_events/api/traces/:id`
 - `GET /solid_events/api/traces?error_fingerprint=...`
 - `GET /solid_events/api/traces?entity_type=Order&entity_id=123`
+- `GET /solid_events/api/metrics/error_rates?dimension=source&window=24h`
+- `GET /solid_events/api/metrics/latency?dimension=deployment_id&window=7d`
+- `GET /solid_events/api/metrics/compare?metric=error_rate&dimension=source&window=24h`
 
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.

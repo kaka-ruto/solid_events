@@ -151,5 +151,105 @@ module SolidEvents
     ensure
       SolidEvents.configuration.api_token = previous_token
     end
+
+    test "error rates endpoint returns grouped error rates" do
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok")
+      create_summary_for_metrics(source: "CheckoutController#create", status: "error")
+      create_summary_for_metrics(source: "OrdersController#create", status: "ok")
+
+      get "/solid_events/api/metrics/error_rates", params: {dimension: "source", window: "24h"}
+      assert_response :success
+
+      payload = JSON.parse(@response.body)
+      checkout = payload.fetch("groups").find { |group| group["value"] == "CheckoutController#create" }
+      orders = payload.fetch("groups").find { |group| group["value"] == "OrdersController#create" }
+
+      assert_equal "source", payload["dimension"]
+      assert_equal 2, checkout["total_count"]
+      assert_equal 1, checkout["error_count"]
+      assert_equal 50.0, checkout["error_rate_pct"]
+      assert_equal 0.0, orders["error_rate_pct"]
+    end
+
+    test "latency endpoint returns grouped latency aggregates" do
+      create_summary_for_metrics(source: "CheckoutController#create", duration_ms: 100.0)
+      create_summary_for_metrics(source: "CheckoutController#create", duration_ms: 300.0)
+      create_summary_for_metrics(source: "OrdersController#create", duration_ms: 50.0)
+
+      get "/solid_events/api/metrics/latency", params: {dimension: "source", window: "24h"}
+      assert_response :success
+
+      payload = JSON.parse(@response.body)
+      checkout = payload.fetch("groups").find { |group| group["value"] == "CheckoutController#create" }
+
+      assert_equal "source", payload["dimension"]
+      assert_equal 2, checkout["sample_count"]
+      assert_equal 200.0, checkout["avg_duration_ms"]
+      assert_equal 300.0, checkout["max_duration_ms"]
+    end
+
+    test "compare metrics endpoint returns error rate deltas between windows" do
+      create_summary_for_metrics(source: "CheckoutController#create", status: "error", started_at: 2.hours.ago)
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", started_at: 2.hours.ago)
+
+      create_summary_for_metrics(source: "CheckoutController#create", status: "error", started_at: 26.hours.ago)
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", started_at: 26.hours.ago)
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", started_at: 26.hours.ago)
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", started_at: 26.hours.ago)
+
+      get "/solid_events/api/metrics/compare", params: {dimension: "source", metric: "error_rate", window: "24h"}
+      assert_response :success
+
+      payload = JSON.parse(@response.body)
+      checkout = payload.fetch("groups").find { |group| group["value"] == "CheckoutController#create" }
+
+      assert_equal "error_rate", payload["metric"]
+      assert_equal 50.0, checkout["current"]
+      assert_equal 25.0, checkout["baseline"]
+      assert_equal 25.0, checkout["delta"]
+      assert_equal 100.0, checkout["delta_pct"]
+    end
+
+    test "compare metrics endpoint returns latency deltas between windows" do
+      create_summary_for_metrics(source: "CheckoutController#create", duration_ms: 400.0, started_at: 2.hours.ago)
+      create_summary_for_metrics(source: "CheckoutController#create", duration_ms: 200.0, started_at: 2.hours.ago)
+      create_summary_for_metrics(source: "CheckoutController#create", duration_ms: 100.0, started_at: 26.hours.ago)
+      create_summary_for_metrics(source: "CheckoutController#create", duration_ms: 100.0, started_at: 26.hours.ago)
+
+      get "/solid_events/api/metrics/compare", params: {dimension: "source", metric: "latency_avg", window: "24h"}
+      assert_response :success
+
+      payload = JSON.parse(@response.body)
+      checkout = payload.fetch("groups").find { |group| group["value"] == "CheckoutController#create" }
+
+      assert_equal "latency_avg", payload["metric"]
+      assert_equal 300.0, checkout["current"]
+      assert_equal 100.0, checkout["baseline"]
+      assert_equal 200.0, checkout["delta"]
+      assert_equal 200.0, checkout["delta_pct"]
+    end
+
+    private
+
+    def create_summary_for_metrics(source:, status: "ok", duration_ms: 120.0, started_at: 5.minutes.ago)
+      trace = SolidEvents::Trace.create!(
+        name: source.underscore.tr("#", "."),
+        trace_type: "request",
+        source: source,
+        status: status,
+        started_at: started_at
+      )
+
+      SolidEvents::Summary.create!(
+        trace: trace,
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: source,
+        status: status,
+        started_at: started_at,
+        finished_at: started_at + 1.minute,
+        duration_ms: duration_ms
+      )
+    end
   end
 end

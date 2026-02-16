@@ -99,6 +99,101 @@ module SolidEvents
       render json: traces.map { |trace| trace.canonical_event }
     end
 
+    def error_rates
+      return render json: {groups: []} unless summary_table_available?
+
+      dimension = metric_dimension_param
+      groups = summary_scope_for_metrics
+        .group(dimension)
+        .order(Arel.sql("COUNT(*) DESC"))
+        .limit(limit_param)
+        .count
+
+      data = groups.map do |value, total|
+        scoped = summary_scope_for_metrics.where(dimension => value)
+        error_count = scoped.where(status: "error").count
+        {
+          dimension: dimension,
+          value: value,
+          total_count: total,
+          error_count: error_count,
+          error_rate_pct: total.positive? ? ((error_count.to_f / total) * 100.0).round(2) : 0.0
+        }
+      end
+
+      render json: {window: metric_window_param, dimension: dimension, groups: data}
+    end
+
+    def latency
+      return render json: {groups: []} unless summary_table_available?
+
+      dimension = metric_dimension_param
+      groups = summary_scope_for_metrics
+        .where.not(duration_ms: nil)
+        .group(dimension)
+        .order(Arel.sql("COUNT(*) DESC"))
+        .limit(limit_param)
+        .pluck(
+          dimension,
+          Arel.sql("COUNT(*)"),
+          Arel.sql("AVG(duration_ms)"),
+          Arel.sql("MAX(duration_ms)")
+        )
+
+      data = groups.map do |value, total_count, avg_duration, max_duration|
+        {
+          dimension: dimension,
+          value: value,
+          sample_count: total_count.to_i,
+          avg_duration_ms: avg_duration.to_f.round(2),
+          max_duration_ms: max_duration.to_f.round(2)
+        }
+      end
+
+      render json: {window: metric_window_param, dimension: dimension, groups: data}
+    end
+
+    def compare_metrics
+      return render json: {groups: []} unless summary_table_available?
+
+      dimension = metric_dimension_param
+      metric = metric_param
+      windows = metric_compare_windows
+
+      scoped = summary_scope_base_for_metrics
+      current_stats = grouped_metric_stats(scope: scoped.where(started_at: windows[:current_start]..windows[:current_end]), dimension: dimension)
+      baseline_stats = grouped_metric_stats(scope: scoped.where(started_at: windows[:baseline_start]..windows[:baseline_end]), dimension: dimension)
+      values = (current_stats.keys + baseline_stats.keys).uniq
+
+      groups = values.map do |value|
+        current = current_stats.fetch(value, default_metric_stats)
+        baseline = baseline_stats.fetch(value, default_metric_stats)
+        current_value = metric_value_for(metric, current)
+        baseline_value = metric_value_for(metric, baseline)
+        delta = (current_value - baseline_value).round(2)
+
+        {
+          dimension: dimension,
+          value: value,
+          metric: metric,
+          current: current_value,
+          baseline: baseline_value,
+          delta: delta,
+          delta_pct: percent_delta(current_value, baseline_value),
+          current_sample_count: current[:total_count],
+          baseline_sample_count: baseline[:total_count]
+        }
+      end.sort_by { |row| [-row[:current_sample_count].to_i, row[:value].to_s] }
+
+      render json: {
+        dimension: dimension,
+        metric: metric,
+        current_window: windows[:current_window],
+        baseline_window: windows[:baseline_window],
+        groups: groups.first(limit_param)
+      }
+    end
+
     private
 
     def serialize_incident(incident)
@@ -229,6 +324,134 @@ module SolidEvents
       end
     rescue StandardError
       []
+    end
+
+    def summary_table_available?
+      SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
+    rescue StandardError
+      false
+    end
+
+    def metric_window_param
+      window = params[:window].to_s
+      return "1h" if window == "1h"
+      return "7d" if window == "7d"
+      return "30d" if window == "30d"
+
+      "24h"
+    end
+
+    def metric_dimension_param
+      allowed = %w[source name deployment_id service_version environment_name entity_type]
+      requested = params[:dimension].to_s
+      allowed.include?(requested) ? requested : "source"
+    end
+
+    def summary_scope_for_metrics
+      summary_scope_base_for_metrics.where("started_at >= ?", window_start_for_metrics)
+    end
+
+    def summary_scope_base_for_metrics
+      scope = SolidEvents::Summary.all
+      scope = scope.where(environment_name: params[:environment_name]) if params[:environment_name].present?
+      scope = scope.where(service_name: params[:service_name]) if params[:service_name].present?
+      scope
+    end
+
+    def window_start_for_metrics
+      case metric_window_param
+      when "1h"
+        1.hour.ago
+      when "7d"
+        7.days.ago
+      when "30d"
+        30.days.ago
+      else
+        24.hours.ago
+      end
+    end
+
+    def metric_param
+      allowed = %w[error_rate latency_avg]
+      requested = params[:metric].to_s
+      allowed.include?(requested) ? requested : "error_rate"
+    end
+
+    def metric_compare_windows
+      current_window = normalized_window(params[:window])
+      baseline_window = normalized_window(params[:baseline_window].presence || current_window)
+      current_duration = duration_for_window(current_window)
+      baseline_duration = duration_for_window(baseline_window)
+      current_end = Time.current
+      current_start = current_end - current_duration
+      baseline_end = current_start
+      baseline_start = baseline_end - baseline_duration
+
+      {
+        current_window: current_window,
+        baseline_window: baseline_window,
+        current_start: current_start,
+        current_end: current_end,
+        baseline_start: baseline_start,
+        baseline_end: baseline_end
+      }
+    end
+
+    def normalized_window(value)
+      window = value.to_s
+      return "1h" if window == "1h"
+      return "7d" if window == "7d"
+      return "30d" if window == "30d"
+
+      "24h"
+    end
+
+    def duration_for_window(window)
+      case window
+      when "1h" then 1.hour
+      when "7d" then 7.days
+      when "30d" then 30.days
+      else 24.hours
+      end
+    end
+
+    def grouped_metric_stats(scope:, dimension:)
+      scope.group(dimension)
+        .pluck(
+          dimension,
+          Arel.sql("COUNT(*)"),
+          Arel.sql("SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END)"),
+          Arel.sql("AVG(duration_ms)")
+        )
+        .each_with_object({}) do |(value, total_count, error_count, avg_duration_ms), memo|
+          memo[value] = {
+            total_count: total_count.to_i,
+            error_count: error_count.to_i,
+            avg_duration_ms: avg_duration_ms.to_f.round(2)
+          }
+        end
+    end
+
+    def default_metric_stats
+      {total_count: 0, error_count: 0, avg_duration_ms: 0.0}
+    end
+
+    def metric_value_for(metric, stats)
+      if metric == "latency_avg"
+        stats[:avg_duration_ms].to_f.round(2)
+      else
+        total = stats[:total_count].to_i
+        return 0.0 if total.zero?
+
+        ((stats[:error_count].to_f / total) * 100.0).round(2)
+      end
+    end
+
+    def percent_delta(current_value, baseline_value)
+      baseline = baseline_value.to_f
+      return nil if baseline.zero?
+
+      (((current_value.to_f - baseline) / baseline) * 100.0).round(2)
     end
 
   end
