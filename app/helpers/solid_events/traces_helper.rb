@@ -44,5 +44,17 @@ module SolidEvents
     rescue StandardError
       "{}"
     end
+
+    def trace_event_count(trace)
+      trace.summary&.event_count || trace.events.size
+    end
+
+    def trace_record_link_count(trace)
+      trace.summary&.record_link_count || trace.record_links.size
+    end
+
+    def trace_error_link_count(trace)
+      trace.summary&.error_count || trace.error_links.size
+    end
   end
 end

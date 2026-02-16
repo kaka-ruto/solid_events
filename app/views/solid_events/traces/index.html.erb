@@ -91,9 +91,9 @@
           <td><span class="badge <%= trace_status_badge(trace.status) %>"><%= trace.status %></span></td>
           <td><%= trace.source %></td>
           <td><%= formatted_trace_duration(trace) %></td>
-          <td><%= trace.events.size %></td>
-          <td><%= trace.record_links.size %></td>
-          <td><%= trace.error_links.size %></td>
+          <td><%= trace_event_count(trace) %></td>
+          <td><%= trace_record_link_count(trace) %></td>
+          <td><%= trace_error_link_count(trace) %></td>
           <td title="<%= absolute_time(trace.started_at) %>"><%= relative_time(trace.started_at) %></td>
         </tr>
       <% end %>

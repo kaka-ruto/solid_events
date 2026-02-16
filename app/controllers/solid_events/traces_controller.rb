@@ -41,7 +41,7 @@ module SolidEvents
       @page_count = (@total_count.to_f / @per_page).ceil
 
       @traces = scope
-        .includes(:events, :record_links, :error_links)
+        .includes(:summary, :events, :record_links, :error_links)
         .offset((@page - 1) * @per_page)
         .limit(@per_page)
     end

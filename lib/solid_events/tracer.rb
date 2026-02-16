@@ -32,6 +32,7 @@ module SolidEvents
       existing_context = normalize_context(trace.context.to_h)
       extra_context = normalize_context(context)
       trace.update!(status: status, finished_at: Time.current, context: existing_context.merge(extra_context))
+      upsert_summary!(trace)
       SolidEvents::Current.trace = nil
       trace
     end
@@ -49,6 +50,7 @@ module SolidEvents
         duration_ms: duration_ms,
         occurred_at: Time.current
       )
+      upsert_summary!(trace)
     end
 
     def link_record!(record)
@@ -61,6 +63,7 @@ module SolidEvents
       return if SolidEvents.ignore_model_prefixes.any? { |prefix| record.class.name.start_with?(prefix.to_s) }
 
       trace.record_links.find_or_create_by!(record_type: record.class.name, record_id: record.id)
+      upsert_summary!(trace)
     end
 
     def link_error!(solid_error_id)
@@ -70,6 +73,7 @@ module SolidEvents
       return unless trace
 
       trace.error_links.find_or_create_by!(solid_error_id: solid_error_id)
+      upsert_summary!(trace)
     end
 
     def bind_exception_to_trace!(exception, trace: current_trace)
@@ -186,6 +190,48 @@ module SolidEvents
 
     def reset_storage_availability_cache!
       @storage_available = nil
+      @summary_storage_available = nil
+    end
+
+    def summary_storage_available?
+      return @summary_storage_available unless @summary_storage_available.nil?
+
+      @summary_storage_available = begin
+        SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
+      rescue StandardError
+        false
+      end
+    end
+
+    def upsert_summary!(trace)
+      return unless trace
+      return unless summary_storage_available?
+
+      summary = SolidEvents::Summary.find_or_initialize_by(trace_id: trace.id)
+      summary.assign_attributes(
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: trace.source,
+        status: trace.status,
+        started_at: trace.started_at,
+        finished_at: trace.finished_at,
+        duration_ms: trace.finished_at && trace.started_at ? ((trace.finished_at - trace.started_at) * 1000.0).round(2) : nil,
+        event_count: trace.events.count,
+        record_link_count: trace.record_links.count,
+        error_count: trace.error_links.count,
+        user_id: trace.context.to_h["user_id"],
+        account_id: trace.context.to_h["account_id"],
+        error_fingerprint: trace.context.to_h["error_fingerprint"],
+        payload: {
+          event_counts: trace.events.group(:event_type).count,
+          error_link_ids: trace.error_links.pluck(:solid_error_id),
+          context: trace.context.to_h
+        }
+      )
+      summary.save!
+      summary
+    rescue StandardError
+      nil
     end
 
     def error_candidates_from(exception:, trace:)

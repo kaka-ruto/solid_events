@@ -80,6 +80,9 @@ module SolidEvents
       assert_equal 1, trace.error_links.count
       assert_equal "ok", trace.status
       assert_not_nil trace.finished_at
+      assert_not_nil trace.summary
+      assert_equal 1, trace.summary.event_count
+      assert_equal 1, trace.summary.error_count
     end
 
     test "does not link ignored model prefixes" do
