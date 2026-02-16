@@ -234,7 +234,7 @@ The mounted engine includes JSON endpoints for automation/agents:
 - `GET /solid_events/api/incidents/:id/traces`
 - `GET /solid_events/api/incidents/:id/context`
 - `GET /solid_events/api/incidents/:id/events`
-- `GET /solid_events/api/incidents/:id/evidence_slices`
+ - `GET /solid_events/api/incidents/:id/evidences`
 - `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
 - `PATCH /solid_events/api/incidents/:id/assign` (`owner`, `team`, `assigned_by`, `assignment_note`)
 - `PATCH /solid_events/api/incidents/:id/mute` (`minutes`)

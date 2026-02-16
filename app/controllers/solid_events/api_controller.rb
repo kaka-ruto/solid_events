@@ -48,7 +48,7 @@ module SolidEvents
       }
     end
 
-    def incident_evidence_slices
+    def incident_evidences
       incident = SolidEvents::Incident.find(params[:id])
       traces = incident_related_traces(incident).includes(:summary).limit(2_000)
       summaries = traces.map(&:summary).compact
@@ -65,7 +65,7 @@ module SolidEvents
 
       render json: {
         incident: serialize_incident(incident),
-        slices: {
+        evidences: {
           by_source: by_source,
           by_status: by_status,
           by_entity: by_entity,

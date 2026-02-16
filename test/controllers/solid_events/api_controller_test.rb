@@ -298,14 +298,14 @@ module SolidEvents
         last_seen_at: Time.current
       )
 
-      get "/solid_events/api/incidents/#{incident.id}/evidence_slices"
+      get "/solid_events/api/incidents/#{incident.id}/evidences"
       assert_response :success
       payload = JSON.parse(@response.body)
       assert_equal incident.id, payload.dig("incident", "id")
-      assert_equal 100.0, payload.dig("slices", "error_rate_pct")
-      assert_equal 1, payload.dig("slices", "by_source", "CheckoutController#create")
-      assert_equal 250.0, payload.dig("slices", "duration_ms", "max")
-      assert_equal "Order", payload.dig("slices", "by_entity", 0, "entity_type")
+      assert_equal 100.0, payload.dig("evidences", "error_rate_pct")
+      assert_equal 1, payload.dig("evidences", "by_source", "CheckoutController#create")
+      assert_equal 250.0, payload.dig("evidences", "duration_ms", "max")
+      assert_equal "Order", payload.dig("evidences", "by_entity", 0, "entity_type")
     end
 
     test "api token is enforced when configured" do
