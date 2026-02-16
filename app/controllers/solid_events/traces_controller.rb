@@ -517,12 +517,55 @@ module SolidEvents
       else
         []
       end
+      @incident_journey_links = @incidents.each_with_object({}) do |incident, memo|
+        memo[incident.id] = build_incident_journey_link(incident)
+      end
     end
 
     def incident_table_available?
       @incident_table_available ||= SolidEvents::Incident.connection.data_source_exists?(SolidEvents::Incident.table_name)
     rescue StandardError
       false
+    end
+
+    def build_incident_journey_link(incident)
+      query = incident.payload.to_h["trace_query"].to_h
+      summary = summary_for_incident_query(query: query, incident: incident)
+
+      if query["request_id"].present? || summary&.request_id.present?
+        request_id = query["request_id"].presence || summary.request_id
+        return {
+          ui_path: traces_path(request_id: request_id, journey_group_by: "request"),
+          api_path: "/solid_events/api/journeys?request_id=#{CGI.escape(request_id)}&window=#{@window}"
+        }
+      end
+
+      entity_type = query["entity_type"].presence || summary&.entity_type
+      entity_id = query["entity_id"].presence || summary&.entity_id
+      return if entity_type.blank? || entity_id.blank?
+
+      {
+        ui_path: traces_path(entity_type: entity_type, entity_id: entity_id, journey_group_by: "entity"),
+        api_path: "/solid_events/api/journeys?entity_type=#{CGI.escape(entity_type)}&entity_id=#{entity_id}&window=#{@window}"
+      }
+    end
+
+    def summary_for_incident_query(query:, incident:)
+      summaries = SolidEvents::Summary.order(started_at: :desc)
+      if query["name"].present?
+        summaries = summaries.where(name: query["name"])
+      else
+        summaries = summaries.where(name: incident.name) if incident.name.present?
+      end
+      if query["source"].present?
+        summaries = summaries.where(source: query["source"])
+      else
+        summaries = summaries.where(source: incident.source) if incident.source.present?
+      end
+      summaries = summaries.where(error_fingerprint: query["error_fingerprint"]) if query["error_fingerprint"].present?
+      summaries.first
+    rescue StandardError
+      nil
     end
   end
 end

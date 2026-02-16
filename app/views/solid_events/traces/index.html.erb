@@ -274,6 +274,11 @@
                 }.merge(trace_query.slice("name", "source")) %>
                 <%= link_to "Compare deploy", traces_path(compare_params), class: "button button-muted" %>
               <% end %>
+              <% journey_link = @incident_journey_links[incident.id] %>
+              <% if journey_link.present? %>
+                <%= link_to "Open journey", journey_link[:ui_path], class: "button button-muted" %>
+                <%= link_to "Journey API", journey_link[:api_path], class: "button button-muted" %>
+              <% end %>
               <% if incident.status == "active" %>
                 <%= button_to "Ack", acknowledge_incident_path(incident), method: :patch, class: "button button-muted" %>
                 <%= button_to "Resolve", resolve_incident_path(incident), method: :patch, class: "button button-muted" %>

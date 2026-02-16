@@ -63,6 +63,8 @@ module SolidEvents
       assert_includes @response.body, "Actions"
       assert_includes @response.body, "Open traces"
       assert_includes @response.body, "Compare deploy"
+      assert_includes @response.body, "Open journey"
+      assert_includes @response.body, "Journey API"
       assert_includes @response.body, "Throughput"
       assert_includes @response.body, "Hot Paths"
       assert_includes @response.body, "Regression Candidates"
