@@ -120,6 +120,20 @@ Incident kinds currently emitted by built-in evaluators:
     - `limit`
   - Response: `{ window, errors_only, journeys: [...] }`
 
+- `GET /solid_events/api/journeys/materialized`
+  - Filters:
+    - `request_id`
+    - `entity_type`, `entity_id`
+    - `limit`, `cursor`
+  - Response: `{ data: [journey...], next_cursor: Integer|null }`
+
+- `GET /solid_events/api/causal_edges`
+  - Filters:
+    - `trace_id`
+    - `edge_type`
+    - `limit`, `cursor`
+  - Response: `{ data: [edge...], next_cursor: Integer|null }`
+
 ### Exports (JSON only)
 
 - `GET /solid_events/api/export/traces`

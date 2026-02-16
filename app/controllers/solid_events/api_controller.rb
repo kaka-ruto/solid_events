@@ -320,6 +320,44 @@ module SolidEvents
       render json: {window: metric_window_param, errors_only: errors_only_param?, journeys: sorted}
     end
 
+    def materialized_journeys
+      return render json: {data: [], next_cursor: nil} unless journey_table_available?
+
+      scope = SolidEvents::Journey.order(id: :desc)
+      scope = scope.where(request_id: params[:request_id].to_s) if params[:request_id].present?
+      if params[:entity_type].present?
+        scope = scope.where(entity_type: params[:entity_type].to_s)
+      end
+      if params[:entity_id].present?
+        scope = scope.where(entity_id: params[:entity_id].to_i)
+      end
+      scope = apply_cursor(scope)
+      rows = scope.limit(limit_param)
+
+      render json: {
+        data: rows.map { |row| serialize_materialized_journey(row) },
+        next_cursor: rows.last&.id
+      }
+    end
+
+    def causal_edges
+      return render json: {data: [], next_cursor: nil} unless causal_edges_table_available?
+
+      scope = SolidEvents::CausalEdge.order(id: :desc)
+      if params[:trace_id].present?
+        trace_id = params[:trace_id].to_i
+        scope = scope.where("from_trace_id = ? OR to_trace_id = ?", trace_id, trace_id)
+      end
+      scope = scope.where(edge_type: params[:edge_type].to_s) if params[:edge_type].present?
+      scope = apply_cursor(scope)
+      rows = scope.limit(limit_param)
+
+      render json: {
+        data: rows.map { |row| serialize_causal_edge(row) },
+        next_cursor: rows.last&.id
+      }
+    end
+
     def export_traces
       return render json: {error: "only json export is supported"}, status: :unprocessable_entity unless export_json?
 
@@ -401,6 +439,35 @@ module SolidEvents
       }
     end
 
+    def serialize_materialized_journey(journey)
+      {
+        id: journey.id,
+        journey_key: journey.journey_key,
+        request_id: journey.request_id,
+        entity_type: journey.entity_type,
+        entity_id: journey.entity_id,
+        last_trace_id: journey.last_trace_id,
+        trace_count: journey.trace_count,
+        error_count: journey.error_count,
+        started_at: journey.started_at,
+        finished_at: journey.finished_at,
+        payload: journey.payload
+      }
+    end
+
+    def serialize_causal_edge(edge)
+      {
+        id: edge.id,
+        from_trace_id: edge.from_trace_id,
+        from_event_id: edge.from_event_id,
+        to_trace_id: edge.to_trace_id,
+        to_event_id: edge.to_event_id,
+        edge_type: edge.edge_type,
+        occurred_at: edge.occurred_at,
+        payload: edge.payload
+      }
+    end
+
     def context_payload_for(incident)
       traces = incident_related_traces(incident).includes(:error_links).limit(limit_param)
       error_ids = traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.compact.uniq
@@ -456,6 +523,18 @@ module SolidEvents
 
     def incident_table_available?
       SolidEvents::Incident.connection.data_source_exists?(SolidEvents::Incident.table_name)
+    rescue StandardError
+      false
+    end
+
+    def journey_table_available?
+      SolidEvents::Journey.connection.data_source_exists?(SolidEvents::Journey.table_name)
+    rescue StandardError
+      false
+    end
+
+    def causal_edges_table_available?
+      SolidEvents::CausalEdge.connection.data_source_exists?(SolidEvents::CausalEdge.table_name)
     rescue StandardError
       false
     end

@@ -20,6 +20,8 @@ SolidEvents::Engine.routes.draw do
   get "api/metrics/compare", to: "api#compare_metrics"
   get "api/metrics/cohorts", to: "api#cohort_metrics"
   get "api/journeys", to: "api#journeys"
+  get "api/journeys/materialized", to: "api#materialized_journeys"
+  get "api/causal_edges", to: "api#causal_edges"
   get "api/export/traces", to: "api#export_traces"
   get "api/export/incidents", to: "api#export_incidents"
   resources :saved_views, only: %i[create destroy]

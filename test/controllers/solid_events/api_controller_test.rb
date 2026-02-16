@@ -503,6 +503,62 @@ module SolidEvents
       assert_equal 1, journey["error_count"]
     end
 
+    test "materialized journeys endpoint returns journey rows with cursor pagination" do
+      first = SolidEvents::Journey.create!(
+        journey_key: "request:req-a",
+        request_id: "req-a",
+        trace_count: 2,
+        error_count: 1,
+        started_at: 2.minutes.ago,
+        finished_at: 1.minute.ago
+      )
+      second = SolidEvents::Journey.create!(
+        journey_key: "request:req-b",
+        request_id: "req-b",
+        trace_count: 1,
+        error_count: 0,
+        started_at: 4.minutes.ago,
+        finished_at: 3.minutes.ago
+      )
+
+      get "/solid_events/api/journeys/materialized", params: {limit: 1}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      first_page_id = payload.fetch("data").first.fetch("id")
+      assert_includes [first.id, second.id], first_page_id
+      assert payload["next_cursor"].present?
+
+      get "/solid_events/api/journeys/materialized", params: {cursor: payload["next_cursor"], limit: 10}
+      assert_response :success
+      next_payload = JSON.parse(@response.body)
+      ids = next_payload.fetch("data").map { |row| row.fetch("id") }
+      refute_includes ids, first_page_id
+    end
+
+    test "causal edges endpoint returns filtered edge rows" do
+      edge = SolidEvents::CausalEdge.create!(
+        from_trace_id: 10,
+        from_event_id: 20,
+        to_trace_id: 30,
+        edge_type: "caused_by",
+        occurred_at: Time.current,
+        payload: {"why" => "enqueue"}
+      )
+      SolidEvents::CausalEdge.create!(
+        from_trace_id: 99,
+        to_trace_id: 100,
+        edge_type: "caused_by",
+        occurred_at: Time.current
+      )
+
+      get "/solid_events/api/causal_edges", params: {trace_id: 10}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal 1, payload.fetch("data").size
+      assert_equal edge.id, payload["data"].first["id"]
+      assert_equal "enqueue", payload["data"].first["payload"]["why"]
+    end
+
     test "export traces endpoint returns json payload with canonical rows" do
       create_summary_for_metrics(source: "CheckoutController#create", status: "error")
       create_summary_for_metrics(source: "OrdersController#create", status: "ok")
