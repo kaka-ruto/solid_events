@@ -31,6 +31,10 @@
         <%= f.select :window, options_for_select([["1 hour", "1h"], ["24 hours", "24h"], ["7 days", "7d"], ["All", "all"]], @window) %>
       </div>
       <div>
+        <%= f.label :min_duration_ms, "Min duration (ms)" %>
+        <%= f.text_field :min_duration_ms, value: @min_duration_ms, placeholder: "e.g. 250" %>
+      </div>
+      <div>
         <%= f.label :per_page, "Rows per page" %>
         <%= f.select :per_page, options_for_select([25, 50, 100], @per_page) %>
       </div>

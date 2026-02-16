@@ -13,6 +13,7 @@ module SolidEvents
       @source = params[:source].to_s.strip
       @context_key = params[:context_key].to_s.strip
       @context_id = params[:context_id].to_s.strip
+      @min_duration_ms = params[:min_duration_ms].to_s.strip
       @window = params[:window].to_s.presence || "24h"
       @page = [params[:page].to_i, 1].max
       @per_page = sanitize_per_page(params[:per_page])
@@ -25,6 +26,7 @@ module SolidEvents
       scope = scope.where("solid_events_traces.source ILIKE ?", "%#{@source}%") if @source.present?
       scope = apply_time_window(scope)
       scope = apply_context_id_filters(scope)
+      scope = apply_min_duration_filter(scope)
 
       if @query.present?
         scope = scope.left_outer_joins(:record_links).where(
@@ -87,6 +89,16 @@ module SolidEvents
 
     def set_trace
       @trace = SolidEvents::Trace.find(params[:id])
+    end
+
+    def apply_min_duration_filter(scope)
+      return scope if @min_duration_ms.blank?
+
+      min_duration = @min_duration_ms.to_f
+      return scope if min_duration <= 0
+
+      scope.where("solid_events_traces.finished_at IS NOT NULL")
+        .where("EXTRACT(EPOCH FROM (solid_events_traces.finished_at - solid_events_traces.started_at)) * 1000 >= ?", min_duration)
     end
   end
 end
