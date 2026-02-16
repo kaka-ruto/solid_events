@@ -9,6 +9,7 @@ module SolidEvents
         detect_new_fingerprints!
         detect_error_spikes!
         detect_p95_regressions!
+        detect_slo_burn_rate_incidents!
         resolve_recovered_incidents!
       rescue StandardError
         nil
@@ -116,6 +117,39 @@ module SolidEvents
               trace_query: {name: name, source: source},
               top_entities: top_entities_for(rows),
               top_request_ids: top_request_ids_for(rows)
+            }
+          )
+        end
+      end
+
+      def detect_slo_burn_rate_incidents!
+        grouped = grouped_recent_summaries
+        grouped.each do |(name, source), rows|
+          next if rows.size < SolidEvents.incident_min_samples
+
+          recent = rows.select { |row| row.started_at >= 1.hour.ago }
+          next if recent.size < SolidEvents.incident_min_samples
+
+          error_rate = (recent.count { |row| row.status == "error" }.to_f / recent.size) * 100.0
+          target = SolidEvents.incident_slo_target_error_rate_pct.to_f
+          next if target <= 0.0
+
+          burn_rate = (error_rate / target).round(2)
+          next unless burn_rate >= SolidEvents.incident_slo_burn_rate_threshold
+
+          upsert_incident!(
+            kind: "slo_burn_rate",
+            severity: "critical",
+            source: source,
+            name: name,
+            payload: {
+              burn_rate: burn_rate,
+              error_rate_pct: error_rate.round(2),
+              target_error_rate_pct: target.round(2),
+              threshold: SolidEvents.incident_slo_burn_rate_threshold,
+              window: "last_1h",
+              sample_size: recent.size,
+              trace_ids: recent.last(20).map(&:trace_id)
             }
           )
         end

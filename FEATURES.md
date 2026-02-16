@@ -68,7 +68,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Support assignment/muting metadata on incidents
 - [x] Auto-resolve recovered incidents after quiet period
 - [x] Retention tiers for success traces, error traces, incidents
-- [ ] SLO burn-rate style incident detection
+- [x] SLO burn-rate style incident detection
 - [ ] Multi-signal incident policies (error + latency + saturation in one rule)
 
 ## 6) API exposure (data plane for humans/agents/tools)

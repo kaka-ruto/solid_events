@@ -154,6 +154,14 @@ module SolidEvents
       configuration.incident_dedupe_window
     end
 
+    def incident_slo_target_error_rate_pct
+      configuration.incident_slo_target_error_rate_pct.to_f
+    end
+
+    def incident_slo_burn_rate_threshold
+      configuration.incident_slo_burn_rate_threshold.to_f
+    end
+
     def incident_suppression_rules
       Array(configuration.incident_suppression_rules)
     end

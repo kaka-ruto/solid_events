@@ -156,5 +156,48 @@ module SolidEvents
       assert_equal "resolved", incident.reload.status
       assert_not_nil incident.resolved_at
     end
+
+    test "creates slo burn rate incident when slo budget burns too fast" do
+      previous_min_samples = SolidEvents.configuration.incident_min_samples
+      previous_target = SolidEvents.configuration.incident_slo_target_error_rate_pct
+      previous_burn = SolidEvents.configuration.incident_slo_burn_rate_threshold
+      SolidEvents.configuration.incident_min_samples = 5
+      SolidEvents.configuration.incident_slo_target_error_rate_pct = 2.0
+      SolidEvents.configuration.incident_slo_burn_rate_threshold = 2.0
+
+      6.times do |i|
+        status = i < 3 ? "error" : "ok"
+        trace = SolidEvents::Trace.create!(
+          name: "checkout.create",
+          trace_type: "request",
+          source: "CheckoutController#create",
+          status: status,
+          started_at: 30.minutes.ago
+        )
+        SolidEvents::Summary.create!(
+          trace: trace,
+          name: trace.name,
+          trace_type: trace.trace_type,
+          source: trace.source,
+          status: status,
+          started_at: trace.started_at,
+          duration_ms: 120.0,
+          event_count: 1,
+          record_link_count: 0,
+          error_count: (status == "error" ? 1 : 0)
+        )
+      end
+
+      SolidEvents::IncidentEvaluator.evaluate!
+      incident = SolidEvents::Incident.where(kind: "slo_burn_rate", name: "checkout.create").first
+      assert_not_nil incident
+      assert_equal "critical", incident.severity
+      assert_operator incident.payload["burn_rate"], :>=, 2.0
+    ensure
+      SolidEvents.configuration.incident_min_samples = previous_min_samples
+      SolidEvents.configuration.incident_slo_target_error_rate_pct = previous_target
+      SolidEvents.configuration.incident_slo_burn_rate_threshold = previous_burn
+    end
+
   end
 end
