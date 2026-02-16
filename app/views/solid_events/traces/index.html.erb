@@ -82,6 +82,41 @@
 </div>
 
 <div class="card">
+  <h3>Hot Paths (7d)</h3>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Source</th>
+          <th>Count</th>
+          <th>P50</th>
+          <th>P95</th>
+          <th>P99</th>
+          <th>Error Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @hot_paths.each do |path| %>
+          <tr>
+            <td><%= path[:name] %></td>
+            <td><%= path[:source] %></td>
+            <td><%= path[:count] %></td>
+            <td><%= path[:p50_ms] %> ms</td>
+            <td><%= path[:p95_ms] %> ms</td>
+            <td><%= path[:p99_ms] %> ms</td>
+            <td><%= path[:error_rate_pct] %>%</td>
+          </tr>
+        <% end %>
+        <% if @hot_paths.empty? %>
+          <tr><td colspan="7" class="muted">Not enough traces to compute hot paths yet.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
   <h3>Regression Candidates (24h vs prior 7d)</h3>
   <div class="table-scroll">
     <table class="events-table">
@@ -124,6 +159,22 @@
     <% end %>
     <% if @new_error_fingerprints.empty? %>
       <li class="muted">No new fingerprints in the last 24 hours.</li>
+    <% end %>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>New Error Fingerprints Since Current Deploy/Version</h3>
+  <ul>
+    <% @new_error_fingerprints_since_deploy.each do |entry| %>
+      <li>
+        <code><%= entry[:fingerprint] %></code>
+        in <strong><%= entry[:source] %></strong>
+        (<%= link_to "trace ##{entry[:trace_id]}", trace_path(entry[:trace_id]) %>)
+      </li>
+    <% end %>
+    <% if @new_error_fingerprints_since_deploy.empty? %>
+      <li class="muted">No fingerprints unique to current deploy/version.</li>
     <% end %>
   </ul>
 </div>

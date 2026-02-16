@@ -193,6 +193,8 @@ end
 - **Correlation Pivots:** On each trace page, see related entity/error clusters and a simple duration regression signal.
 - **Related Trace Exploration:** Jump from one trace to all traces sharing the same entity or error fingerprint.
 - **Regression Surfacing:** Index highlights latency regressions and newly-seen error fingerprints.
+- **Hot Paths & Percentiles:** Automatic p50/p95/p99 and error-rate visibility for top paths/jobs.
+- **Deploy-Aware Error Detection:** Highlights fingerprints unique to current deploy/version.
 
 ---
 

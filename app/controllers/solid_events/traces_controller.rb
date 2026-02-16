@@ -224,10 +224,27 @@ module SolidEvents
     def load_index_insights
       @regression_candidates = []
       @new_error_fingerprints = []
+      @hot_paths = []
+      @new_error_fingerprints_since_deploy = []
       return unless summary_table_available?
 
       summaries = SolidEvents::Summary.where(started_at: 7.days.ago..Time.current).where.not(duration_ms: nil)
       grouped = summaries.group_by { |summary| [summary.name, summary.source] }
+      @hot_paths = grouped.filter_map do |(name, source), rows|
+        durations = rows.map(&:duration_ms).compact.sort
+        next if durations.size < 5
+
+        {
+          name: name,
+          source: source,
+          count: durations.size,
+          p50_ms: percentile(durations, 0.50),
+          p95_ms: percentile(durations, 0.95),
+          p99_ms: percentile(durations, 0.99),
+          error_rate_pct: ((rows.count { |row| row.status == "error" }.to_f / rows.size) * 100.0).round(2)
+        }
+      end.sort_by { |entry| -entry[:p95_ms] }.first(15)
+
       @regression_candidates = grouped.filter_map do |(name, source), rows|
         recent = rows.select { |row| row.started_at >= 24.hours.ago }.map(&:duration_ms)
         baseline = rows.select { |row| row.started_at < 24.hours.ago }.map(&:duration_ms)
@@ -262,9 +279,45 @@ module SolidEvents
         .limit(10)
         .map { |summary| {fingerprint: summary.error_fingerprint, source: summary.source, trace_id: summary.trace_id} }
         .uniq { |entry| entry[:fingerprint] }
+
+      @new_error_fingerprints_since_deploy = fingerprints_since_current_deploy
     rescue StandardError
       @regression_candidates = []
       @new_error_fingerprints = []
+      @hot_paths = []
+      @new_error_fingerprints_since_deploy = []
+    end
+
+    def percentile(sorted_values, ratio)
+      return nil if sorted_values.empty?
+
+      index = (ratio * (sorted_values.length - 1)).ceil
+      sorted_values[index].to_f.round(2)
+    end
+
+    def fingerprints_since_current_deploy
+      deploy_id = SolidEvents.deployment_id.to_s
+      version = SolidEvents.service_version.to_s
+      return [] if deploy_id.blank? && version.blank?
+
+      current_scope = SolidEvents::Summary.where.not(error_fingerprint: [nil, ""])
+      current_scope = current_scope.where(deployment_id: deploy_id) if deploy_id.present?
+      current_scope = current_scope.where(service_version: version) if version.present?
+      current_scope = current_scope.where(started_at: 7.days.ago..Time.current)
+
+      baseline_scope = SolidEvents::Summary.where.not(error_fingerprint: [nil, ""])
+      baseline_scope = baseline_scope.where.not(deployment_id: deploy_id) if deploy_id.present?
+      baseline_scope = baseline_scope.where.not(service_version: version) if version.present?
+      baseline_scope = baseline_scope.where(started_at: 14.days.ago...7.days.ago)
+
+      baseline = baseline_scope.distinct.pluck(:error_fingerprint).to_set
+
+      current_scope
+        .where.not(error_fingerprint: baseline.to_a)
+        .order(started_at: :desc)
+        .limit(15)
+        .map { |summary| {fingerprint: summary.error_fingerprint, source: summary.source, trace_id: summary.trace_id} }
+        .uniq { |entry| entry[:fingerprint] }
     end
   end
 end

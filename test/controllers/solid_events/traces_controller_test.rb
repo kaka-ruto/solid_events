@@ -48,8 +48,10 @@ module SolidEvents
       get "/solid_events"
       assert_response :success
       assert_includes @response.body, "Context Graph"
+      assert_includes @response.body, "Hot Paths"
       assert_includes @response.body, "Regression Candidates"
       assert_includes @response.body, "New Error Fingerprints"
+      assert_includes @response.body, "Since Current Deploy/Version"
 
       get "/solid_events", params: {entity_type: "Order", entity_id: "987"}
       assert_response :success
