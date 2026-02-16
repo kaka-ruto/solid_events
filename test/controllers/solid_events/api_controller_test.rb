@@ -229,9 +229,34 @@ module SolidEvents
       assert_equal 200.0, checkout["delta_pct"]
     end
 
+    test "cohort metrics endpoint returns grouped cohort values" do
+      create_summary_for_metrics(source: "CheckoutController#create", status: "error", context: {"plan" => "premium"})
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", context: {"plan" => "premium"})
+      create_summary_for_metrics(source: "CheckoutController#create", status: "ok", context: {"plan" => "free"})
+
+      get "/solid_events/api/metrics/cohorts", params: {cohort_key: "plan", metric: "error_rate", window: "24h"}
+      assert_response :success
+
+      payload = JSON.parse(@response.body)
+      premium = payload.fetch("groups").find { |group| group["cohort_value"] == "premium" }
+      free = payload.fetch("groups").find { |group| group["cohort_value"] == "free" }
+
+      assert_equal "plan", payload["cohort_key"]
+      assert_equal "error_rate", payload["metric"]
+      assert_equal 50.0, premium["value"]
+      assert_equal 0.0, free["value"]
+    end
+
+    test "cohort metrics endpoint requires cohort key" do
+      get "/solid_events/api/metrics/cohorts", params: {metric: "error_rate"}
+      assert_response :unprocessable_entity
+      payload = JSON.parse(@response.body)
+      assert_equal "cohort_key is required", payload["error"]
+    end
+
     private
 
-    def create_summary_for_metrics(source:, status: "ok", duration_ms: 120.0, started_at: 5.minutes.ago)
+    def create_summary_for_metrics(source:, status: "ok", duration_ms: 120.0, started_at: 5.minutes.ago, context: {})
       trace = SolidEvents::Trace.create!(
         name: source.underscore.tr("#", "."),
         trace_type: "request",
@@ -248,7 +273,8 @@ module SolidEvents
         status: status,
         started_at: started_at,
         finished_at: started_at + 1.minute,
-        duration_ms: duration_ms
+        duration_ms: duration_ms,
+        payload: {"context" => context}
       )
     end
   end

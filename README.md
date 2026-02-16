@@ -226,6 +226,7 @@ with `resolved_by` and `resolution_note`.
 - `GET /solid_events/api/metrics/error_rates?dimension=source&window=24h`
 - `GET /solid_events/api/metrics/latency?dimension=deployment_id&window=7d`
 - `GET /solid_events/api/metrics/compare?metric=error_rate&dimension=source&window=24h`
+- `GET /solid_events/api/metrics/cohorts?cohort_key=plan&metric=error_rate&window=24h`
 
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.

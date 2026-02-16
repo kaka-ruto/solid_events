@@ -194,6 +194,55 @@ module SolidEvents
       }
     end
 
+    def cohort_metrics
+      return render json: {groups: []} unless summary_table_available?
+      return render json: {error: "cohort_key is required"}, status: :unprocessable_entity if params[:cohort_key].blank?
+
+      metric = metric_param
+      cohort_key = params[:cohort_key].to_s
+      requested_values = params[:cohort_values].to_s.split(",").map(&:strip).reject(&:blank?)
+
+      rows = summary_scope_for_metrics.limit(10_000).pluck(:status, :duration_ms, :payload)
+      grouped = Hash.new { |hash, key| hash[key] = {count: 0, error_count: 0, latency_sum: 0.0} }
+
+      rows.each do |status, duration_ms, payload|
+        context = payload.to_h["context"].to_h
+        cohort_value = context[cohort_key]
+        next if cohort_value.blank?
+
+        cohort_value = cohort_value.to_s
+        next if requested_values.any? && !requested_values.include?(cohort_value)
+
+        grouped[cohort_value][:count] += 1
+        grouped[cohort_value][:error_count] += 1 if status == "error"
+        grouped[cohort_value][:latency_sum] += duration_ms.to_f
+      end
+
+      groups = grouped.map do |cohort_value, stats|
+        value = if metric == "latency_avg"
+          stats[:count].positive? ? (stats[:latency_sum] / stats[:count]).round(2) : 0.0
+        else
+          stats[:count].positive? ? ((stats[:error_count].to_f / stats[:count]) * 100.0).round(2) : 0.0
+        end
+
+        {
+          cohort_key: cohort_key,
+          cohort_value: cohort_value,
+          metric: metric,
+          value: value,
+          sample_count: stats[:count],
+          error_count: stats[:error_count]
+        }
+      end.sort_by { |row| [-row[:sample_count], row[:cohort_value]] }
+
+      render json: {
+        window: metric_window_param,
+        cohort_key: cohort_key,
+        metric: metric,
+        groups: groups.first(limit_param)
+      }
+    end
+
     private
 
     def serialize_incident(incident)
