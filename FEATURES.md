@@ -98,6 +98,8 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Trace show page with canonical event, context, waterfall, record links, error links
 - [x] Incident feed with lifecycle actions
 - [x] Hot-path drilldown with percentile/error buckets
+- [x] Journey sequences panel with request/entity grouping and quick links
+- [x] Incident shortcuts to open related journey views quickly
 - [ ] Saved views / shared investigation links
 - [x] UI compare mode (release A vs release B, cohort A vs cohort B)
 - [ ] Timeline view optimized for “tell me what happened” narratives
@@ -123,6 +125,6 @@ Important: these are outcome examples, not a requirement to build natural-langua
 
 To align with the “Rails can already answer these questions” goal, the next major gap is:
 
-1. Built-in aggregate query endpoints (cohorts, deploy deltas, feature slices)
-2. Comparison workflows (in UI/API) to explain regressions quickly
-3. Better evidence modeling (journeys, causal links, state transitions) so external tools/people can answer questions reliably
+1. Saved investigation workflows (named views, shareable links, team handoff context)
+2. Timeline-style storytelling for long multi-step failures
+3. Better evidence modeling (causal links, state transitions) so external tools/people can answer questions reliably
