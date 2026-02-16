@@ -23,6 +23,11 @@
 </div>
 
 <div class="card">
+  <h3>Canonical Event</h3>
+  <pre><%= JSON.pretty_generate(@trace.canonical_event) %></pre>
+</div>
+
+<div class="card">
   <h3>Context</h3>
   <% if @trace.context.present? %>
     <pre><%= JSON.pretty_generate(@trace.context) %></pre>

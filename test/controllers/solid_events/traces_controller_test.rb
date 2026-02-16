@@ -16,6 +16,7 @@ module SolidEvents
       get "/solid_events/#{trace.id}"
       assert_response :success
       assert_includes @response.body, "Trace ##{trace.id}"
+      assert_includes @response.body, "Canonical Event"
       assert_includes @response.body, "/solid_errors/123"
     end
   end
