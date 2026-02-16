@@ -160,9 +160,36 @@ module SolidEvents
       assert_response :success
       payload = JSON.parse(@response.body)
       assert_equal incident.id, payload["incident"]["id"]
-      assert_equal "1", payload["constraints"]["schema_version"]
       assert payload["run_sequence"].any?
       assert payload["suggested_commands"].any?
+    end
+
+    test "incident handoff combines context and commands" do
+      trace = SolidEvents::Trace.create!(
+        name: "orders.create",
+        trace_type: "request",
+        source: "OrdersController#create",
+        status: "error",
+        started_at: Time.current
+      )
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "OrdersController#create",
+        name: "orders.create",
+        payload: {"trace_ids" => [trace.id]},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+
+      get "/solid_events/api/incidents/#{incident.id}/handoff"
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal incident.id, payload["incident"]["id"]
+      assert_equal "1", payload["constraints"]["schema_version"]
+      assert payload["context"]["evidence"]["trace_count"] >= 1
+      assert payload["commands"]["suggested_commands"].any?
     end
 
     test "api token is enforced when configured" do

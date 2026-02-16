@@ -29,29 +29,7 @@ module SolidEvents
 
     def incident_context
       incident = SolidEvents::Incident.find(params[:id])
-      traces = incident_related_traces(incident).includes(:error_links).limit(limit_param)
-      error_ids = traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.compact.uniq
-      trace_query = incident.payload.to_h["trace_query"].to_h
-
-      render json: {
-        incident: serialize_incident(incident),
-        evidence: {
-          trace_count: traces.size,
-          error_ids: error_ids,
-          traces: traces.map(&:canonical_event),
-          solid_errors: fetch_solid_errors(error_ids)
-        },
-        suggested_filters: trace_query,
-        links: {
-          traces_ui: traces_path(trace_query),
-          incident_traces_api: api_incident_traces_path(incident),
-          incident_lifecycle: {
-            acknowledge: "/solid_events/api/incidents/#{incident.id}/acknowledge",
-            resolve: "/solid_events/api/incidents/#{incident.id}/resolve",
-            reopen: "/solid_events/api/incidents/#{incident.id}/reopen"
-          }
-        }
-      }
+      render json: context_payload_for(incident)
     end
 
     def acknowledge_incident
@@ -92,24 +70,19 @@ module SolidEvents
 
     def incident_commands
       incident = SolidEvents::Incident.find(params[:id])
-      traces = incident_related_traces(incident).includes(:error_links, :summary).limit(limit_param)
-      primary_trace = traces.first
+      render json: commands_payload_for(incident)
+    end
 
+    def incident_handoff
+      incident = SolidEvents::Incident.find(params[:id])
       render json: {
         incident: serialize_incident(incident),
-        suggested_commands: suggested_commands_for(incident: incident),
-        suspected_files: suspect_files_for(incident: incident, trace: primary_trace),
-        run_sequence: [
-          "Reproduce from incident context",
-          "Write/adjust failing test",
-          "Implement minimal fix",
-          "Run targeted tests",
-          "Run full suite",
-          "Resolve incident via API when verified"
-        ],
+        context: context_payload_for(incident).except(:incident),
+        commands: commands_payload_for(incident).except(:incident),
         constraints: {
           schema_version: SolidEvents.canonical_schema_version,
-          keep_regression_tests_green: true
+          keep_regression_tests_green: true,
+          avoid_sensitive_data: true
         }
       }
     end
@@ -187,6 +160,51 @@ module SolidEvents
       end
       commands << "bin/rails test"
       commands
+    end
+
+    def context_payload_for(incident)
+      traces = incident_related_traces(incident).includes(:error_links).limit(limit_param)
+      error_ids = traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.compact.uniq
+      trace_query = incident.payload.to_h["trace_query"].to_h
+
+      {
+        incident: serialize_incident(incident),
+        evidence: {
+          trace_count: traces.size,
+          error_ids: error_ids,
+          traces: traces.map(&:canonical_event),
+          solid_errors: fetch_solid_errors(error_ids)
+        },
+        suggested_filters: trace_query,
+        links: {
+          traces_ui: traces_path(trace_query),
+          incident_traces_api: api_incident_traces_path(incident),
+          incident_lifecycle: {
+            acknowledge: "/solid_events/api/incidents/#{incident.id}/acknowledge",
+            resolve: "/solid_events/api/incidents/#{incident.id}/resolve",
+            reopen: "/solid_events/api/incidents/#{incident.id}/reopen"
+          }
+        }
+      }
+    end
+
+    def commands_payload_for(incident)
+      traces = incident_related_traces(incident).includes(:summary).limit(limit_param)
+      primary_trace = traces.first
+
+      {
+        incident: serialize_incident(incident),
+        suggested_commands: suggested_commands_for(incident: incident),
+        suspected_files: suspect_files_for(incident: incident, trace: primary_trace),
+        run_sequence: [
+          "Reproduce from incident context",
+          "Write/adjust failing test",
+          "Implement minimal fix",
+          "Run targeted tests",
+          "Run full suite",
+          "Resolve incident via API when verified"
+        ]
+      }
     end
 
     def incident_related_traces(incident)
