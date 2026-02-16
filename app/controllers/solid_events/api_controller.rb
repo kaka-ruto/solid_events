@@ -73,25 +73,6 @@ module SolidEvents
       render json: serialize_incident(incident)
     end
 
-    def incident_commands
-      incident = SolidEvents::Incident.find(params[:id])
-      render json: commands_payload_for(incident)
-    end
-
-    def incident_handoff
-      incident = SolidEvents::Incident.find(params[:id])
-      render json: {
-        incident: serialize_incident(incident),
-        context: context_payload_for(incident).except(:incident),
-        commands: commands_payload_for(incident).except(:incident),
-        constraints: {
-          schema_version: SolidEvents.canonical_schema_version,
-          keep_regression_tests_green: true,
-          avoid_sensitive_data: true
-        }
-      }
-    end
-
     def trace
       trace = SolidEvents::Trace.includes(:summary, :events, :record_links, :error_links).find(params[:id])
 
@@ -145,35 +126,6 @@ module SolidEvents
       }
     end
 
-    def suspect_files_for(incident:, trace:)
-      files = []
-      if incident.source.to_s.include?("#")
-        controller = incident.source.to_s.split("#").first.underscore
-        files << "app/controllers/#{controller}.rb"
-        files << "test/controllers/#{controller}_test.rb"
-      end
-      if trace&.summary&.entity_type.present?
-        model_name = trace.summary.entity_type.to_s.underscore
-        files << "app/models/#{model_name}.rb"
-      end
-      files.uniq
-    end
-
-    def suggested_commands_for(incident:)
-      commands = []
-      if incident.source.to_s.include?("#")
-        controller = incident.source.to_s.split("#").first.underscore
-        controller_test = "test/controllers/#{controller}_test.rb"
-        commands << "bin/rails test #{controller_test}" if file_exists?(controller_test) && file_exists?("bin/rails")
-      end
-
-      commands << default_test_command
-      commands << lint_command_if_available
-      commands << kind_specific_optional_command(incident)
-
-      commands.compact.uniq
-    end
-
     def context_payload_for(incident)
       traces = incident_related_traces(incident).includes(:error_links).limit(limit_param)
       error_ids = traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.compact.uniq
@@ -198,55 +150,6 @@ module SolidEvents
           }
         }
       }
-    end
-
-    def commands_payload_for(incident)
-      traces = incident_related_traces(incident).includes(:summary).limit(limit_param)
-      primary_trace = traces.first
-
-      {
-        incident: serialize_incident(incident),
-        command_policy: {
-          cwd: "repository_root",
-          use_repo_wrappers: true,
-          avoid_global_tools: true,
-          optional_commands_marked: true
-        },
-        suggested_commands: suggested_commands_for(incident: incident),
-        suspected_files: suspect_files_for(incident: incident, trace: primary_trace),
-        run_sequence: [
-          "Reproduce from incident context",
-          "Write/adjust failing test",
-          "Implement minimal fix",
-          "Run targeted tests",
-          "Run full suite",
-          "Resolve incident via API when verified"
-        ]
-      }
-    end
-
-    def default_test_command
-      return "bin/rails test" if file_exists?("bin/rails")
-
-      "bundle exec rails test"
-    end
-
-    def lint_command_if_available
-      return "bin/rubocop" if file_exists?("bin/rubocop")
-      return "bundle exec rubocop" if file_exists?(".rubocop.yml")
-
-      nil
-    end
-
-    def kind_specific_optional_command(incident)
-      case incident.kind.to_s
-      when "new_fingerprint"
-        file_exists?("bin/rails") ? "bin/rails test:system # optional" : nil
-      when "p95_regression"
-        file_exists?("test/performance") ? "bin/rails test test/performance # optional" : nil
-      else
-        nil
-      end
     end
 
     def incident_related_traces(incident)
@@ -328,8 +231,5 @@ module SolidEvents
       []
     end
 
-    def file_exists?(path)
-      Rails.root.join(path).exist?
-    end
   end
 end
