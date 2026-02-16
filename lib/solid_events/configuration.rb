@@ -36,6 +36,8 @@ module SolidEvents
                   :incident_error_spike_threshold_pct, :incident_p95_regression_factor,
                   :incident_min_samples, :incident_dedupe_window,
                   :incident_slo_target_error_rate_pct, :incident_slo_burn_rate_threshold,
+                  :incident_multi_signal_error_rate_pct, :incident_multi_signal_p95_factor,
+                  :incident_multi_signal_sql_duration_ms,
                   :incident_suppression_rules, :incident_notifier, :api_token,
                   :evaluate_incidents_on_request, :feature_slice_keys,
                   :max_context_payload_bytes, :max_event_payload_bytes,
@@ -85,6 +87,9 @@ module SolidEvents
       @incident_dedupe_window = 1.hour
       @incident_slo_target_error_rate_pct = 1.0
       @incident_slo_burn_rate_threshold = 2.0
+      @incident_multi_signal_error_rate_pct = 10.0
+      @incident_multi_signal_p95_factor = 1.4
+      @incident_multi_signal_sql_duration_ms = 200.0
       @incident_suppression_rules = []
       @incident_notifier = nil
       @api_token = ENV["SOLID_EVENTS_API_TOKEN"]

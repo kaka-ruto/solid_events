@@ -199,5 +199,69 @@ module SolidEvents
       SolidEvents.configuration.incident_slo_burn_rate_threshold = previous_burn
     end
 
+    test "creates multi signal degradation incident when error latency and sql pressure all regress" do
+      previous_min_samples = SolidEvents.configuration.incident_min_samples
+      previous_error = SolidEvents.configuration.incident_multi_signal_error_rate_pct
+      previous_p95 = SolidEvents.configuration.incident_multi_signal_p95_factor
+      previous_sql = SolidEvents.configuration.incident_multi_signal_sql_duration_ms
+      SolidEvents.configuration.incident_min_samples = 5
+      SolidEvents.configuration.incident_multi_signal_error_rate_pct = 20.0
+      SolidEvents.configuration.incident_multi_signal_p95_factor = 1.4
+      SolidEvents.configuration.incident_multi_signal_sql_duration_ms = 100.0
+
+      6.times do
+        trace = SolidEvents::Trace.create!(
+          name: "checkout.create",
+          trace_type: "request",
+          source: "CheckoutController#create",
+          status: "ok",
+          started_at: 2.days.ago
+        )
+        SolidEvents::Summary.create!(
+          trace: trace,
+          name: trace.name,
+          trace_type: trace.trace_type,
+          source: trace.source,
+          status: "ok",
+          started_at: trace.started_at,
+          duration_ms: 80.0,
+          sql_duration_ms: 20.0
+        )
+      end
+
+      6.times do |i|
+        status = i < 3 ? "error" : "ok"
+        trace = SolidEvents::Trace.create!(
+          name: "checkout.create",
+          trace_type: "request",
+          source: "CheckoutController#create",
+          status: status,
+          started_at: 20.minutes.ago
+        )
+        SolidEvents::Summary.create!(
+          trace: trace,
+          name: trace.name,
+          trace_type: trace.trace_type,
+          source: trace.source,
+          status: status,
+          started_at: trace.started_at,
+          duration_ms: 300.0,
+          sql_duration_ms: 150.0,
+          error_count: (status == "error" ? 1 : 0)
+        )
+      end
+
+      SolidEvents::IncidentEvaluator.evaluate!
+      incident = SolidEvents::Incident.where(kind: "multi_signal_degradation", name: "checkout.create").first
+      assert_not_nil incident
+      assert_equal "critical", incident.severity
+      assert_operator incident.payload.dig("signals", "p95_factor"), :>=, 1.4
+    ensure
+      SolidEvents.configuration.incident_min_samples = previous_min_samples
+      SolidEvents.configuration.incident_multi_signal_error_rate_pct = previous_error
+      SolidEvents.configuration.incident_multi_signal_p95_factor = previous_p95
+      SolidEvents.configuration.incident_multi_signal_sql_duration_ms = previous_sql
+    end
+
   end
 end

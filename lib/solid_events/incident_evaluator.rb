@@ -10,6 +10,7 @@ module SolidEvents
         detect_error_spikes!
         detect_p95_regressions!
         detect_slo_burn_rate_incidents!
+        detect_multi_signal_incidents!
         resolve_recovered_incidents!
       rescue StandardError
         nil
@@ -147,6 +148,57 @@ module SolidEvents
               error_rate_pct: error_rate.round(2),
               target_error_rate_pct: target.round(2),
               threshold: SolidEvents.incident_slo_burn_rate_threshold,
+              window: "last_1h",
+              sample_size: recent.size,
+              trace_ids: recent.last(20).map(&:trace_id)
+            }
+          )
+        end
+      end
+
+      def detect_multi_signal_incidents!
+        grouped = grouped_recent_summaries
+        grouped.each do |(name, source), rows|
+          recent = rows.select { |row| row.started_at >= 1.hour.ago }
+          next if recent.size < SolidEvents.incident_min_samples
+
+          error_rate = (recent.count { |row| row.status == "error" }.to_f / recent.size) * 100.0
+          next unless error_rate >= SolidEvents.incident_multi_signal_error_rate_pct
+
+          recent_durations = recent.map(&:duration_ms).compact.sort
+          baseline_durations = SolidEvents::Summary
+            .where(name: name, source: source, started_at: 7.days.ago...1.hour.ago)
+            .where.not(duration_ms: nil)
+            .pluck(:duration_ms).compact.sort
+          next if recent_durations.size < SolidEvents.incident_min_samples
+          next if baseline_durations.size < SolidEvents.incident_min_samples
+
+          recent_p95 = percentile(recent_durations, 0.95)
+          baseline_p95 = percentile(baseline_durations, 0.95)
+          next unless baseline_p95.positive?
+          p95_factor = (recent_p95 / baseline_p95).round(2)
+          next unless p95_factor >= SolidEvents.incident_multi_signal_p95_factor
+
+          avg_sql_duration_ms = recent.sum { |row| row.sql_duration_ms.to_f } / recent.size
+          sql_signal = avg_sql_duration_ms >= SolidEvents.incident_multi_signal_sql_duration_ms
+          next unless sql_signal
+
+          upsert_incident!(
+            kind: "multi_signal_degradation",
+            severity: "critical",
+            source: source,
+            name: name,
+            payload: {
+              signals: {
+                error_rate_pct: error_rate.round(2),
+                p95_factor: p95_factor,
+                avg_sql_duration_ms: avg_sql_duration_ms.round(2)
+              },
+              thresholds: {
+                error_rate_pct: SolidEvents.incident_multi_signal_error_rate_pct,
+                p95_factor: SolidEvents.incident_multi_signal_p95_factor,
+                avg_sql_duration_ms: SolidEvents.incident_multi_signal_sql_duration_ms
+              },
               window: "last_1h",
               sample_size: recent.size,
               trace_ids: recent.last(20).map(&:trace_id)

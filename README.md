@@ -242,6 +242,9 @@ The mounted engine includes JSON endpoints for automation/agents:
 Resolution metadata is supported via `PATCH /solid_events/api/incidents/:id/resolve`
 with `resolved_by` and `resolution_note`.
 
+Incident policies include `new_fingerprint`, `error_spike`, `p95_regression`,
+`slo_burn_rate`, and `multi_signal_degradation`.
+
 - `GET /solid_events/api/traces/:id`
 - `GET /solid_events/api/traces?error_fingerprint=...`
 - `GET /solid_events/api/traces?entity_type=Order&entity_id=123`

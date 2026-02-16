@@ -162,6 +162,18 @@ module SolidEvents
       configuration.incident_slo_burn_rate_threshold.to_f
     end
 
+    def incident_multi_signal_error_rate_pct
+      configuration.incident_multi_signal_error_rate_pct.to_f
+    end
+
+    def incident_multi_signal_p95_factor
+      configuration.incident_multi_signal_p95_factor.to_f
+    end
+
+    def incident_multi_signal_sql_duration_ms
+      configuration.incident_multi_signal_sql_duration_ms.to_f
+    end
+
     def incident_suppression_rules
       Array(configuration.incident_suppression_rules)
     end
