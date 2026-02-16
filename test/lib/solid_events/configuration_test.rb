@@ -62,6 +62,7 @@ module SolidEvents
       assert_predicate configuration.service_name, :present?
       assert_predicate configuration.environment_name, :present?
       assert_includes configuration.sensitive_keys, "password"
+      assert_equal({}, configuration.redaction_paths)
       assert_equal "[REDACTED]", configuration.redaction_placeholder
       assert_equal 16_384, configuration.max_context_payload_bytes
       assert_equal 8_192, configuration.max_event_payload_bytes

@@ -690,12 +690,14 @@ module SolidEvents
       return [] if events.empty?
 
       events.map do |event|
+        change_fragments = event.payload.to_h.map { |key, value| "#{key}=#{value}" }
+        change_text = change_fragments.any? ? " changes=#{change_fragments.join(',')}" : ""
         {
           at: event.occurred_at,
           kind: "incident",
           label: "incident #{event.action}: #{incident.kind}",
           trace_id: nil,
-          details: "status=#{incident.status} severity=#{incident.severity} id=#{incident.id} actor=#{event.actor.presence || 'system'}"
+          details: "status=#{incident.status} severity=#{incident.severity} id=#{incident.id} actor=#{event.actor.presence || 'system'}#{change_text}"
         }
       end
     end

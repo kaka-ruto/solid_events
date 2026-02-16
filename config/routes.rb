@@ -6,6 +6,7 @@ SolidEvents::Engine.routes.draw do
   get "api/incidents", to: "api#incidents"
   get "api/incidents/:id/traces", to: "api#incident_traces", as: :api_incident_traces
   get "api/incidents/:id/context", to: "api#incident_context", as: :api_incident_context
+  get "api/incidents/:id/events", to: "api#incident_events", as: :api_incident_events
   patch "api/incidents/:id/assign", to: "api#assign_incident"
   patch "api/incidents/:id/mute", to: "api#mute_incident"
   patch "api/incidents/:id/acknowledge", to: "api#acknowledge_incident"

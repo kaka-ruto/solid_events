@@ -36,6 +36,18 @@ module SolidEvents
       render json: context_payload_for(incident)
     end
 
+    def incident_events
+      incident = SolidEvents::Incident.find(params[:id])
+      events = incident.incident_events.recent.limit(limit_param)
+      events = events.where(action: params[:event_action].to_s) if params[:event_action].present?
+      events = apply_cursor(events)
+      render json: {
+        incident: serialize_incident(incident),
+        data: events.map { |event| serialize_incident_event(event) },
+        next_cursor: events.last&.id
+      }
+    end
+
     def acknowledge_incident
       incident = SolidEvents::Incident.find(params[:id])
       incident.acknowledge!
@@ -348,6 +360,17 @@ module SolidEvents
         resolved_by: incident.resolved_by,
         resolution_note: incident.resolution_note,
         muted_until: incident.muted_until
+      }
+    end
+
+    def serialize_incident_event(event)
+      {
+        id: event.id,
+        incident_id: event.incident_id,
+        action: event.action,
+        actor: event.actor,
+        payload: event.payload,
+        occurred_at: event.occurred_at
       }
     end
 

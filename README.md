@@ -233,6 +233,7 @@ The mounted engine includes JSON endpoints for automation/agents:
 - `GET /solid_events/api/incidents?status=active&limit=50&cursor=123`
 - `GET /solid_events/api/incidents/:id/traces`
 - `GET /solid_events/api/incidents/:id/context`
+- `GET /solid_events/api/incidents/:id/events`
 - `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
 - `PATCH /solid_events/api/incidents/:id/assign` (`owner`, `team`, `assigned_by`, `assignment_note`)
 - `PATCH /solid_events/api/incidents/:id/mute` (`minutes`)
@@ -255,6 +256,8 @@ with `resolved_by` and `resolution_note`.
 - `GET /solid_events/api/export/traces?format=json&status=error&window=24h`
 - `GET /solid_events/api/export/incidents?format=json&status=active`
 
+Exports currently support `format=json` only.
+
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 List endpoints return `{ data: [...], next_cursor: <id|null> }` for cursor pagination.
 Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.
@@ -262,6 +265,14 @@ Set `config.evaluate_incidents_on_request = false` in production if you only wan
 `context` includes `solid_errors` enrichment when available.
 
 API contract and versioning details: `docs/api.md`.
+
+### Benchmarking
+
+Run a lightweight query benchmark:
+
+```bash
+bundle exec rake "solid_events:benchmark[200]"
+```
 
 ### Scheduling (Production)
 

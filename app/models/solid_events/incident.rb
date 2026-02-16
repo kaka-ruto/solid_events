@@ -17,17 +17,17 @@ module SolidEvents
 
     def acknowledge!
       update!(status: "acknowledged", acknowledged_at: Time.current)
-      record_event!(action: "acknowledged")
+      record_event!(action: "acknowledged", payload: {status: "acknowledged"})
     end
 
     def resolve!
       update!(status: "resolved", resolved_at: Time.current)
-      record_event!(action: "resolved")
+      record_event!(action: "resolved", payload: {status: "resolved"})
     end
 
     def reopen!
       update!(status: "active", resolved_at: nil, resolved_by: nil, resolution_note: nil)
-      record_event!(action: "reopened")
+      record_event!(action: "reopened", payload: {status: "active"})
     end
 
     def mute_for!(duration)

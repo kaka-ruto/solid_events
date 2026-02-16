@@ -50,6 +50,10 @@ This document defines the public API contract for `solid_events` engine endpoint
 - `GET /solid_events/api/incidents/:id/context`
   - Response includes incident details, evidence traces/errors, and suggested links.
 
+- `GET /solid_events/api/incidents/:id/events`
+  - Filters: `event_action`, `limit`, `cursor`
+  - Response: `{ incident: {...}, data: [incident_event...], next_cursor: Integer|null }`
+
 - `PATCH /solid_events/api/incidents/:id/acknowledge`
 - `PATCH /solid_events/api/incidents/:id/resolve`
   - Optional body params: `resolved_by`, `resolution_note`

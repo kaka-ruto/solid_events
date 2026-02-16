@@ -3,6 +3,7 @@
 require_relative "solid_events/version"
 require_relative "solid_events/configuration"
 require_relative "solid_events/current"
+require_relative "solid_events/benchmark"
 require_relative "solid_events/engine"
 
 module SolidEvents

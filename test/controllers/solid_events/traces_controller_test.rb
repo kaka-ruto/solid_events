@@ -165,6 +165,7 @@ module SolidEvents
       )
       incident.record_event!(action: "detected")
       incident.acknowledge!
+      incident.assign!(owner: "alice", team: "platform", assigned_by: "bot", assignment_note: "triage")
       incident.resolve!
       incident.reopen!
 
@@ -172,6 +173,8 @@ module SolidEvents
       assert_response :success
       assert_includes @response.body, "incident detected: error_spike"
       assert_includes @response.body, "incident acknowledged: error_spike"
+      assert_includes @response.body, "incident assigned: error_spike"
+      assert_includes @response.body, "owner=alice"
       assert_includes @response.body, "incident resolved: error_spike"
       assert_includes @response.body, "incident reopened: error_spike"
     end

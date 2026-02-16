@@ -224,6 +224,29 @@ module SolidEvents
       assert payload["links"]["traces_ui"].include?("name=orders.create")
     end
 
+    test "incident events endpoint returns lifecycle history with cursor" do
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "CheckoutController#create",
+        name: "checkout.create",
+        payload: {},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+      incident.record_event!(action: "detected")
+      incident.acknowledge!
+      incident.resolve!
+
+      get "/solid_events/api/incidents/#{incident.id}/events", params: {limit: 2}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal incident.id, payload["incident"]["id"]
+      assert_equal 2, payload.fetch("data").size
+      assert payload["next_cursor"].present?
+    end
+
     test "api token is enforced when configured" do
       previous_token = SolidEvents.configuration.api_token
       SolidEvents.configuration.api_token = "secret123"
