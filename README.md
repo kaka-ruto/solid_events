@@ -207,6 +207,18 @@ The mounted engine includes JSON endpoints for automation/agents:
 
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 
+### Scheduling (Production)
+
+To avoid relying on dashboard traffic, schedule these:
+
+- `SolidEvents::EvaluateIncidentsJob.perform_later` every 5 minutes
+- `SolidEvents::PruneJob.perform_later` daily
+
+Rake alternatives (cron-friendly):
+
+- `bin/rails solid_events:evaluate_incidents`
+- `bin/rails solid_events:prune`
+
 ---
 
 ## 🕵️‍♀️ The Dashboard (Mission Control)

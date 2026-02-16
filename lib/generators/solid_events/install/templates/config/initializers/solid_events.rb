@@ -39,5 +39,11 @@ SolidEvents.configure do |config|
   # config.incident_retention_period = 180.days
   # Protect /solid_events/api/* endpoints.
   # config.api_token = ENV["SOLID_EVENTS_API_TOKEN"]
+  # Schedule incident evaluation and prune jobs via your scheduler:
+  # - SolidEvents::EvaluateIncidentsJob.perform_later (e.g. every 5 minutes)
+  # - SolidEvents::PruneJob.perform_later (e.g. daily)
+  # Rake equivalents:
+  # - bin/rails solid_events:evaluate_incidents
+  # - bin/rails solid_events:prune
   config.retention_period = 30.days
 end
