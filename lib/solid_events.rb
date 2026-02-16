@@ -37,6 +37,14 @@ module SolidEvents
       configuration.retention_period
     end
 
+    def error_retention_period
+      configuration.error_retention_period
+    end
+
+    def incident_retention_period
+      configuration.incident_retention_period
+    end
+
     def ignore_sql_fragments
       Array(configuration.effective_ignore_sql_fragments)
     end

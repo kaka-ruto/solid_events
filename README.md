@@ -43,6 +43,7 @@ Stop renting your data.
 - **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
 - **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
 - **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
+- **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -161,6 +162,17 @@ SolidEvents.configure do |config|
   # 10. Wide-event primary mode
   config.wide_event_primary = true
   config.persist_sub_events = false
+
+  # 11. Retention tiers
+  config.retention_period = 30.days
+  config.error_retention_period = 90.days
+  config.incident_retention_period = 180.days
+
+  # 12. Optional Slack incident notifier
+  # config.incident_notifier = SolidEvents::Notifiers::SlackWebhookNotifier.new(
+  #   webhook_url: ENV.fetch("SOLID_EVENTS_SLACK_WEBHOOK_URL"),
+  #   channel: "#incidents"
+  # )
 end
 ```
 

@@ -22,7 +22,8 @@ module SolidEvents
       SolidEvents::ErrorLink
     ].freeze
 
-    attr_accessor :connects_to, :ignore_paths, :retention_period, :ignore_namespaces,
+    attr_accessor :connects_to, :ignore_paths, :retention_period, :error_retention_period,
+                  :incident_retention_period, :ignore_namespaces,
                   :ignore_sql_fragments, :ignore_model_prefixes, :ignore_job_prefixes,
                   :ignore_controller_prefixes,
                   :ignore_sql_tables, :allow_sql_fragments, :allow_model_prefixes, :allow_job_prefixes,
@@ -76,6 +77,8 @@ module SolidEvents
       @incident_suppression_rules = []
       @incident_notifier = nil
       @retention_period = 30.days
+      @error_retention_period = 90.days
+      @incident_retention_period = 180.days
     end
 
     def ignore_models=(models)
