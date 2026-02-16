@@ -45,6 +45,9 @@ module SolidEvents
       get "/solid_events", params: {entity_type: "Order", entity_id: "987"}
       assert_response :success
 
+      get "/solid_events", params: {error_fingerprint: "fp-123"}
+      assert_response :success
+
       get "/solid_events/#{trace.id}"
       assert_response :success
       assert_includes @response.body, "Trace ##{trace.id}"

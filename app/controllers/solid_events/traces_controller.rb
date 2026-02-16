@@ -15,6 +15,7 @@ module SolidEvents
       @context_id = params[:context_id].to_s.strip
       @entity_type = params[:entity_type].to_s.strip
       @entity_id = params[:entity_id].to_s.strip
+      @error_fingerprint = params[:error_fingerprint].to_s.strip
       @min_duration_ms = params[:min_duration_ms].to_s.strip
       @window = params[:window].to_s.presence || "24h"
       @page = [params[:page].to_i, 1].max
@@ -29,6 +30,7 @@ module SolidEvents
       scope = apply_time_window(scope)
       scope = apply_context_id_filters(scope)
       scope = apply_entity_filters(scope)
+      scope = apply_error_fingerprint_filter(scope)
       scope = apply_min_duration_filter(scope)
 
       if @query.present?
@@ -109,6 +111,16 @@ module SolidEvents
       scoped = scoped.where("solid_events_record_links.record_type ILIKE ?", "%#{@entity_type}%") if @entity_type.present?
       scoped = scoped.where(solid_events_record_links: {record_id: @entity_id.to_i}) if @entity_id.present?
       scoped.distinct
+    end
+
+    def apply_error_fingerprint_filter(scope)
+      return scope if @error_fingerprint.blank?
+
+      if summary_table_available?
+        return scope.left_outer_joins(:summary).where(solid_events_summaries: {error_fingerprint: @error_fingerprint})
+      end
+
+      apply_context_key_filter(scope, "error_fingerprint", @error_fingerprint)
     end
 
     def set_trace

@@ -56,7 +56,7 @@
       <%= link_to "Open all traces for this entity", traces_path(entity_type: @trace.summary.entity_type, entity_id: @trace.summary.entity_id), class: "button button-muted" %>
     <% end %>
     <% if @trace.summary&.error_fingerprint.present? %>
-      <%= link_to "Open all traces for this error fingerprint", traces_path(context_key: "error_fingerprint", context_id: @trace.summary.error_fingerprint), class: "button button-muted" %>
+      <%= link_to "Open all traces for this error fingerprint", traces_path(error_fingerprint: @trace.summary.error_fingerprint), class: "button button-muted" %>
     <% end %>
   </p>
   <p class="muted">

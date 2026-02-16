@@ -35,6 +35,10 @@
         <%= f.text_field :entity_id, value: @entity_id, placeholder: "e.g. 123" %>
       </div>
       <div>
+        <%= f.label :error_fingerprint, "Error fingerprint" %>
+        <%= f.text_field :error_fingerprint, value: @error_fingerprint, placeholder: "sha256..." %>
+      </div>
+      <div>
         <%= f.label :window, "Time window" %>
         <%= f.select :window, options_for_select([["1 hour", "1h"], ["24 hours", "24h"], ["7 days", "7d"], ["All", "all"]], @window) %>
       </div>
