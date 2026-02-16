@@ -13,6 +13,8 @@ module SolidEvents
       @source = params[:source].to_s.strip
       @context_key = params[:context_key].to_s.strip
       @context_id = params[:context_id].to_s.strip
+      @entity_type = params[:entity_type].to_s.strip
+      @entity_id = params[:entity_id].to_s.strip
       @min_duration_ms = params[:min_duration_ms].to_s.strip
       @window = params[:window].to_s.presence || "24h"
       @page = [params[:page].to_i, 1].max
@@ -26,6 +28,7 @@ module SolidEvents
       scope = scope.where("solid_events_traces.source ILIKE ?", "%#{@source}%") if @source.present?
       scope = apply_time_window(scope)
       scope = apply_context_id_filters(scope)
+      scope = apply_entity_filters(scope)
       scope = apply_min_duration_filter(scope)
 
       if @query.present?
@@ -40,8 +43,11 @@ module SolidEvents
       @error_count = scope.where(status: "error").count("DISTINCT solid_events_traces.id")
       @page_count = (@total_count.to_f / @per_page).ceil
 
+      includes = [:events, :record_links, :error_links]
+      includes << :summary if summary_table_available?
+
       @traces = scope
-        .includes(:summary, :events, :record_links, :error_links)
+        .includes(*includes)
         .offset((@page - 1) * @per_page)
         .limit(@per_page)
     end
@@ -87,6 +93,22 @@ module SolidEvents
       scope.where("CAST(solid_events_traces.context AS TEXT) LIKE ?", "%\"#{key}\":#{escaped_value}%")
     end
 
+    def apply_entity_filters(scope)
+      return scope if @entity_type.blank? && @entity_id.blank?
+
+      if summary_table_available?
+        scoped = scope.left_outer_joins(:summary)
+        scoped = scoped.where("solid_events_summaries.entity_type ILIKE ?", "%#{@entity_type}%") if @entity_type.present?
+        scoped = scoped.where(solid_events_summaries: {entity_id: @entity_id.to_i}) if @entity_id.present?
+        return scoped
+      end
+
+      scoped = scope.left_outer_joins(:record_links)
+      scoped = scoped.where("solid_events_record_links.record_type ILIKE ?", "%#{@entity_type}%") if @entity_type.present?
+      scoped = scoped.where(solid_events_record_links: {record_id: @entity_id.to_i}) if @entity_id.present?
+      scoped.distinct
+    end
+
     def set_trace
       @trace = SolidEvents::Trace.find(params[:id])
     end
@@ -99,6 +121,12 @@ module SolidEvents
 
       scope.where("solid_events_traces.finished_at IS NOT NULL")
         .where("EXTRACT(EPOCH FROM (solid_events_traces.finished_at - solid_events_traces.started_at)) * 1000 >= ?", min_duration)
+    end
+
+    def summary_table_available?
+      @summary_table_available ||= SolidEvents::Summary.connection.data_source_exists?(SolidEvents::Summary.table_name)
+    rescue StandardError
+      false
     end
   end
 end

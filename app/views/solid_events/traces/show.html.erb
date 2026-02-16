@@ -27,6 +27,22 @@
   <pre><%= JSON.pretty_generate(@trace.canonical_event) %></pre>
 </div>
 
+<% if @trace.summary %>
+  <div class="card">
+    <h3>Summary Dimensions</h3>
+    <p>
+      Outcome: <strong><%= @trace.summary.outcome || "n/a" %></strong> |
+      Entity: <strong><%= @trace.summary.entity_type || "n/a" %>#<%= @trace.summary.entity_id || "n/a" %></strong> |
+      HTTP: <strong><%= @trace.summary.request_method || "n/a" %> <%= @trace.summary.http_status || "n/a" %></strong>
+    </p>
+    <p class="muted">
+      Path: <%= @trace.summary.path || "n/a" %> |
+      Job: <%= @trace.summary.job_class || "n/a" %> |
+      Queue: <%= @trace.summary.queue_name || "n/a" %>
+    </p>
+  </div>
+<% end %>
+
 <div class="card">
   <h3>Context</h3>
   <% if @trace.context.present? %>

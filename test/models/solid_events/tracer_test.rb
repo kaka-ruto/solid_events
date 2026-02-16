@@ -3,6 +3,14 @@
 require "test_helper"
 require "digest"
 
+class ::LinkedOrderRecord
+  attr_reader :id
+
+  def initialize(id)
+    @id = id
+  end
+end
+
 unless defined?(::SolidErrors)
   module ::SolidErrors
   end
@@ -54,10 +62,6 @@ end
 
 module SolidEvents
   class TracerTest < ActiveSupport::TestCase
-    class DummyRecord < ApplicationRecord
-      self.table_name = "solid_events_traces"
-    end
-
     module SolidQueue
       class DummyRecord
         attr_reader :id
@@ -69,20 +73,36 @@ module SolidEvents
     end
 
     test "creates trace events and links" do
-      trace = SolidEvents::Tracer.start_trace!(name: "order.created", trace_type: "request", source: "OrdersController#create", context: {user_id: 1})
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "order.created",
+        trace_type: "request",
+        source: "OrdersController#create",
+        context: {user_id: 1, path: "/orders", method: "POST"}
+      )
+
+      linked_record = ::LinkedOrderRecord.new(42)
 
       SolidEvents::Tracer.record_event!(event_type: "sql", name: "SELECT", payload: {sql: "select 1"}, duration_ms: 1.3)
+      SolidEvents::Tracer.link_record!(linked_record)
       SolidEvents::Tracer.link_error!(123)
-      SolidEvents::Tracer.finish_trace!(status: "ok")
+      SolidEvents::Tracer.finish_trace!(status: "ok", context: {status: 201})
 
       trace.reload
       assert_equal 1, trace.events.count
+      assert_equal 1, trace.record_links.count
       assert_equal 1, trace.error_links.count
       assert_equal "ok", trace.status
       assert_not_nil trace.finished_at
       assert_not_nil trace.summary
       assert_equal 1, trace.summary.event_count
+      assert_equal 1, trace.summary.record_link_count
       assert_equal 1, trace.summary.error_count
+      assert_equal "success", trace.summary.outcome
+      assert_equal linked_record.class.name, trace.summary.entity_type
+      assert_equal linked_record.id, trace.summary.entity_id
+      assert_equal 201, trace.summary.http_status
+      assert_equal "POST", trace.summary.request_method
+      assert_equal "/orders", trace.summary.path
     end
 
     test "does not link ignored model prefixes" do

@@ -38,6 +38,7 @@ Stop renting your data.
 - **🔗 Auto-Linking:** Automatically detects when an ActiveRecord model is created or updated during a request and links it to the Trace. (e.g., `Order.create` -> Linked to Trace).
 - **🤖 Auto-Labeling:** Intelligently maps controller actions to business terms (e.g., `OrdersController#create` becomes `order.created`).
 - **👤 Context Scraping:** Automatically detects `current_user`, `current_account`, or `tenant_id` from your controllers and tags the trace.
+- **📊 Canonical Wide Events:** Maintains one summary row per trace with outcome, entity, HTTP, timing, and correlation fields for fast filtering.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
@@ -151,6 +152,7 @@ end
 - **Live Tail:** See requests coming in real-time.
 - **Trace Waterfall:** Visualize the sequence: `Controller` -> `Model` -> `SQL` -> `Job`.
 - **Entity Search:** Search for "Order 123" to see every trace that ever touched that order.
+- **Dimension Filters:** Filter by entity type/id, context key/value, status, source, and minimum duration.
 
 ---
 

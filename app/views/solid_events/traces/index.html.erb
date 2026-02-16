@@ -27,6 +27,14 @@
         <%= f.text_field :context_id, value: @context_id, placeholder: "e.g. 123" %>
       </div>
       <div>
+        <%= f.label :entity_type, "Entity type" %>
+        <%= f.text_field :entity_type, value: @entity_type, placeholder: "e.g. Order" %>
+      </div>
+      <div>
+        <%= f.label :entity_id, "Entity id" %>
+        <%= f.text_field :entity_id, value: @entity_id, placeholder: "e.g. 123" %>
+      </div>
+      <div>
         <%= f.label :window, "Time window" %>
         <%= f.select :window, options_for_select([["1 hour", "1h"], ["24 hours", "24h"], ["7 days", "7d"], ["All", "all"]], @window) %>
       </div>

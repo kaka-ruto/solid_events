@@ -53,6 +53,14 @@ ActiveRecord::Schema[7.1].define do
     t.string :trace_type, null: false
     t.string :source, null: false
     t.string :status, null: false, default: "ok"
+    t.string :outcome
+    t.string :entity_type
+    t.bigint :entity_id
+    t.integer :http_status
+    t.string :request_method
+    t.string :path
+    t.string :job_class
+    t.string :queue_name
     t.datetime :started_at, null: false
     t.datetime :finished_at
     t.float :duration_ms
@@ -72,4 +80,9 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_summaries, :user_id
   add_index :solid_events_summaries, :account_id
   add_index :solid_events_summaries, :error_fingerprint
+  add_index :solid_events_summaries, :entity_type
+  add_index :solid_events_summaries, :entity_id
+  add_index :solid_events_summaries, :http_status
+  add_index :solid_events_summaries, :request_method
+  add_index :solid_events_summaries, :queue_name
 end

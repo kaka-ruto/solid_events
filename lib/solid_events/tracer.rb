@@ -207,31 +207,52 @@ module SolidEvents
       return unless trace
       return unless summary_storage_available?
 
+      context = trace.context.to_h
+      entity = extract_primary_entity(trace)
+      http_status = context["status"].presence&.to_i
+
       summary = SolidEvents::Summary.find_or_initialize_by(trace_id: trace.id)
       summary.assign_attributes(
         name: trace.name,
         trace_type: trace.trace_type,
         source: trace.source,
         status: trace.status,
+        outcome: trace.status == "error" ? "failure" : "success",
+        entity_type: entity[:type],
+        entity_id: entity[:id],
+        http_status: http_status,
+        request_method: context["method"],
+        path: context["path"],
+        job_class: trace.trace_type == "job" ? trace.source : nil,
+        queue_name: context["queue"],
         started_at: trace.started_at,
         finished_at: trace.finished_at,
         duration_ms: trace.finished_at && trace.started_at ? ((trace.finished_at - trace.started_at) * 1000.0).round(2) : nil,
         event_count: trace.events.count,
         record_link_count: trace.record_links.count,
         error_count: trace.error_links.count,
-        user_id: trace.context.to_h["user_id"],
-        account_id: trace.context.to_h["account_id"],
-        error_fingerprint: trace.context.to_h["error_fingerprint"],
+        user_id: context["user_id"],
+        account_id: context["account_id"],
+        error_fingerprint: context["error_fingerprint"],
         payload: {
           event_counts: trace.events.group(:event_type).count,
           error_link_ids: trace.error_links.pluck(:solid_error_id),
-          context: trace.context.to_h
+          context: context
         }
       )
       summary.save!
       summary
     rescue StandardError
       nil
+    end
+
+    def extract_primary_entity(trace)
+      link = trace.record_links.order(:created_at, :id).first
+      return {type: nil, id: nil} unless link
+
+      {type: link.record_type, id: link.record_id}
+    rescue StandardError
+      {type: nil, id: nil}
     end
 
     def error_candidates_from(exception:, trace:)
