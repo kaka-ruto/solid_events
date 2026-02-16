@@ -52,3 +52,34 @@ bundle exec rake "solid_events:benchmark[200]"
 ```
 
 Use `docs/performance.md` targets as rollout guardrails.
+
+## 7) Roll out bulk-consumer APIs safely
+
+Use staged rollout for the new high-volume APIs:
+
+1. Validate in staging:
+   - `GET /solid_events/api/journeys/materialized?limit=50`
+   - `GET /solid_events/api/causal_edges?limit=50`
+2. Start with a low polling cadence in production (30-60s) for external consumers.
+3. Add API token auth before enabling external agents on these endpoints.
+
+## 8) Roll out state-diff capture by domain
+
+Avoid enabling full-model diff capture everywhere on day one.
+
+1. Start with explicit allowlist:
+   - `config.state_diff_allowlist = ["Order", "Subscription"]`
+2. Cap payload growth:
+   - `config.state_diff_max_changed_fields = 20`
+3. Exclude noisy models:
+   - `config.state_diff_blocklist = ["Ahoy::Event", "PaperTrail::Version"]`
+4. Expand allowlist only after measuring storage growth and query latency.
+
+## 9) Post-rollout checks
+
+After 24-48 hours in production, verify:
+
+- Incident evaluation job runtime and queue latency
+- `solid_events_summaries` growth vs retention windows
+- `solid_events_journeys` and `solid_events_causal_edges` query latency
+- API consumer cursor usage (no offset-based polling)

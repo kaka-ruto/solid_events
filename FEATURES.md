@@ -129,6 +129,6 @@ Important: these are outcome examples, not a requirement to build natural-langua
 
 To align with the “Rails can already answer these questions” goal, the next major gap is:
 
-1. Expose materialized journey and causal-edge records through dedicated APIs for bulk consumers
-2. Add higher-fidelity business state transition controls for selected entity classes
-3. Extend migration/performance guidance for production rollouts at scale
+1. Add percentile and error-rate rollups directly on materialized journeys for fast dashboarding
+2. Provide retention and prune policies for journey and causal-edge tables
+3. Add explainability UI pages for causal-edge graph exploration and state-diff timelines
