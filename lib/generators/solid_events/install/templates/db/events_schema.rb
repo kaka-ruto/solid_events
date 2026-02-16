@@ -147,6 +147,8 @@ ActiveRecord::Schema[7.1].define do
 
   add_index :solid_events_incident_events, :action
   add_index :solid_events_incident_events, :occurred_at
+  add_index :solid_events_incident_events, [:incident_id, :occurred_at], name: "index_solid_events_incident_events_on_incident_and_time"
+  add_index :solid_events_incident_events, [:incident_id, :action, :occurred_at], name: "index_solid_events_incident_events_on_incident_action_time"
 
   create_table :solid_events_saved_views, force: :cascade do |t|
     t.string :name, null: false

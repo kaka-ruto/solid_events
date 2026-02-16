@@ -265,6 +265,8 @@ Set `config.evaluate_incidents_on_request = false` in production if you only wan
 `context` includes `solid_errors` enrichment when available.
 
 API contract and versioning details: `docs/api.md`.
+Migration guide: `docs/migration.md`.
+Performance baseline and query plan notes: `docs/performance.md`.
 
 ### Benchmarking
 

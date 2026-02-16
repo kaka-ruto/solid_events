@@ -593,6 +593,9 @@ module SolidEvents
       @incident_journey_links = @incidents.each_with_object({}) do |incident, memo|
         memo[incident.id] = build_incident_journey_link(incident)
       end
+      @incident_event_rows = @incidents.each_with_object({}) do |incident, memo|
+        memo[incident.id] = incident.incident_events.recent.limit(3)
+      end
     end
 
     def load_saved_views

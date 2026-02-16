@@ -120,7 +120,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Background jobs/tasks for incident evaluation and pruning
 - [x] Minitest coverage across tracer/subscribers/API/controllers/jobs
 - [x] Load/perf benchmark suite with throughput targets
-- [ ] Migration guide for teams replacing default log-centric workflows
+- [x] Migration guide for teams replacing default log-centric workflows
 
 ---
 

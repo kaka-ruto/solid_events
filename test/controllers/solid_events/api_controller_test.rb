@@ -247,6 +247,27 @@ module SolidEvents
       assert payload["next_cursor"].present?
     end
 
+    test "incident events endpoint supports action filtering" do
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "active",
+        source: "CheckoutController#create",
+        name: "checkout.create",
+        payload: {},
+        detected_at: Time.current,
+        last_seen_at: Time.current
+      )
+      incident.record_event!(action: "detected")
+      incident.acknowledge!
+
+      get "/solid_events/api/incidents/#{incident.id}/events", params: {event_action: "acknowledged"}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      assert_equal 1, payload.fetch("data").size
+      assert_equal "acknowledged", payload["data"].first["action"]
+    end
+
     test "api token is enforced when configured" do
       previous_token = SolidEvents.configuration.api_token
       SolidEvents.configuration.api_token = "secret123"

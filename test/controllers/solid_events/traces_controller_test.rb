@@ -53,12 +53,16 @@ module SolidEvents
         payload: {trace_query: {name: trace.name, source: trace.source}},
         detected_at: Time.current,
         last_seen_at: Time.current
-      )
+      ).tap do |incident|
+        incident.record_event!(action: "detected")
+        incident.acknowledge!
+      end
 
       get "/solid_events"
       assert_response :success
       assert_includes @response.body, "Context Graph"
       assert_includes @response.body, "Incidents Feed"
+      assert_includes @response.body, "Lifecycle"
       assert_includes @response.body, "Journey Sequences"
       assert_includes @response.body, "Timeline"
       assert_includes @response.body, "Saved Views"
@@ -67,6 +71,8 @@ module SolidEvents
       assert_includes @response.body, "Compare deploy"
       assert_includes @response.body, "Open journey"
       assert_includes @response.body, "Journey API"
+      assert_includes @response.body, "acknowledged"
+      assert_includes @response.body, "/solid_events/api/incidents/"
       assert_includes @response.body, "Throughput"
       assert_includes @response.body, "Hot Paths"
       assert_includes @response.body, "Regression Candidates"

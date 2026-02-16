@@ -306,6 +306,7 @@
           <th>Source</th>
           <th>Last Seen</th>
           <th>Details</th>
+          <th>Lifecycle</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -322,6 +323,17 @@
             <td><%= incident.source %></td>
             <td title="<%= absolute_time(incident.last_seen_at) %>"><%= relative_time(incident.last_seen_at) %></td>
             <td><%= incident.payload.to_h.to_json %></td>
+            <td>
+              <% rows = @incident_event_rows[incident.id] || [] %>
+              <% if rows.any? %>
+                <% rows.each do |event| %>
+                  <div class="muted"><%= event.action %> (<%= relative_time(event.occurred_at) %>)</div>
+                <% end %>
+              <% else %>
+                <span class="muted">no events</span>
+              <% end %>
+              <div><%= link_to "API", "/solid_events/api/incidents/#{incident.id}/events", class: "button button-muted" %></div>
+            </td>
             <td>
               <% trace_query = incident.payload.to_h["trace_query"].to_h.symbolize_keys %>
               <% if trace_query.present? %>
@@ -352,7 +364,7 @@
           </tr>
         <% end %>
         <% if @incidents.empty? %>
-          <tr><td colspan="11" class="muted">No incidents detected.</td></tr>
+          <tr><td colspan="12" class="muted">No incidents detected.</td></tr>
         <% end %>
       </tbody>
     </table>
