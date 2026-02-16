@@ -26,6 +26,7 @@ module SolidEvents
           entity_id: summary.entity_id,
           http_status: summary.http_status,
           request_method: summary.request_method,
+          request_id: summary.request_id,
           path: summary.path,
           job_class: summary.job_class,
           queue_name: summary.queue_name,

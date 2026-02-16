@@ -32,6 +32,7 @@ module SolidEvents
       trace_context = {
         "path" => request.path,
         "method" => request.request_method,
+        "request_id" => request.request_id,
         "format" => request.format&.to_s
       }.merge(SolidEvents::ContextScraper.from_controller(self))
 
@@ -59,6 +60,7 @@ module SolidEvents
       event_payload = {
         "path" => request.path,
         "method" => request.request_method,
+        "request_id" => request.request_id,
         "format" => request.format&.to_s,
         "status" => status_code
       }.merge(SolidEvents::ContextScraper.from_controller(self))

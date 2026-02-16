@@ -37,6 +37,7 @@
     </p>
     <p class="muted">
       Path: <%= @trace.summary.path || "n/a" %> |
+      Request ID: <%= @trace.summary.request_id || "n/a" %> |
       Job: <%= @trace.summary.job_class || "n/a" %> |
       Queue: <%= @trace.summary.queue_name || "n/a" %>
     </p>
@@ -57,6 +58,9 @@
     <% end %>
     <% if @trace.summary&.error_fingerprint.present? %>
       <%= link_to "Open all traces for this error fingerprint", traces_path(error_fingerprint: @trace.summary.error_fingerprint), class: "button button-muted" %>
+    <% end %>
+    <% if @trace.summary&.request_id.present? %>
+      <%= link_to "Open all traces for this request id", traces_path(request_id: @trace.summary.request_id), class: "button button-muted" %>
     <% end %>
   </p>
   <p class="muted">

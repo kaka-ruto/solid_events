@@ -184,6 +184,7 @@ end
 - **Entity Search:** Search for "Order 123" to see every trace that ever touched that order.
 - **Dimension Filters:** Filter by entity type/id, context key/value, status, source, and minimum duration.
 - **Fingerprint Filter:** Filter directly by canonical `error_fingerprint` from the traces index.
+- **Request Correlation:** Filter and pivot by canonical `request_id` to stitch related traces instantly.
 - **Correlation Pivots:** On each trace page, see related entity/error clusters and a simple duration regression signal.
 - **Related Trace Exploration:** Jump from one trace to all traces sharing the same entity or error fingerprint.
 

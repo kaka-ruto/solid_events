@@ -90,7 +90,7 @@ module SolidEvents
         name: "order.created",
         trace_type: "request",
         source: "OrdersController#create",
-        context: {user_id: 1, path: "/orders", method: "POST"}
+        context: {user_id: 1, path: "/orders", method: "POST", request_id: "req-1"}
       )
 
       linked_record = ::LinkedOrderRecord.new(42)
@@ -115,6 +115,7 @@ module SolidEvents
       assert_equal linked_record.id, trace.summary.entity_id
       assert_equal 201, trace.summary.http_status
       assert_equal "POST", trace.summary.request_method
+      assert_equal "req-1", trace.summary.request_id
       assert_equal "/orders", trace.summary.path
     end
 

@@ -233,6 +233,7 @@ module SolidEvents
         entity_id: entity[:id],
         http_status: http_status,
         request_method: context["method"],
+        request_id: context["request_id"],
         path: context["path"],
         job_class: trace.trace_type == "job" ? trace.source : nil,
         queue_name: context["queue"],

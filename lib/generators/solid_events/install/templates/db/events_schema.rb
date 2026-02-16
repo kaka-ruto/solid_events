@@ -58,6 +58,7 @@ ActiveRecord::Schema[7.1].define do
     t.bigint :entity_id
     t.integer :http_status
     t.string :request_method
+    t.string :request_id
     t.string :path
     t.string :job_class
     t.string :queue_name
@@ -84,5 +85,6 @@ ActiveRecord::Schema[7.1].define do
   add_index :solid_events_summaries, :entity_id
   add_index :solid_events_summaries, :http_status
   add_index :solid_events_summaries, :request_method
+  add_index :solid_events_summaries, :request_id
   add_index :solid_events_summaries, :queue_name
 end

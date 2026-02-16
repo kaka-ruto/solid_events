@@ -17,6 +17,7 @@ module SolidEvents
         entity_type: "Order",
         entity_id: 987,
         error_fingerprint: "fp-123",
+        request_id: "req-123",
         started_at: trace.started_at,
         event_count: 1,
         record_link_count: 0,
@@ -32,6 +33,7 @@ module SolidEvents
         entity_type: "Order",
         entity_id: 987,
         error_fingerprint: "fp-123",
+        request_id: "req-123",
         started_at: related_trace.started_at,
         event_count: 1,
         record_link_count: 0,
@@ -48,6 +50,9 @@ module SolidEvents
       get "/solid_events", params: {error_fingerprint: "fp-123"}
       assert_response :success
 
+      get "/solid_events", params: {request_id: "req-123"}
+      assert_response :success
+
       get "/solid_events/#{trace.id}"
       assert_response :success
       assert_includes @response.body, "Trace ##{trace.id}"
@@ -58,6 +63,7 @@ module SolidEvents
       assert_includes @response.body, "Related Traces by Error Fingerprint"
       assert_includes @response.body, "Open all traces for this entity"
       assert_includes @response.body, "Open all traces for this error fingerprint"
+      assert_includes @response.body, "Open all traces for this request id"
       assert_includes @response.body, related_trace.name
       assert_includes @response.body, "/solid_errors/123"
     end
