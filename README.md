@@ -201,8 +201,8 @@ The mounted engine includes JSON endpoints for automation/agents:
 
 - `GET /solid_events/api/incidents?status=active&limit=50`
 - `GET /solid_events/api/incidents/:id/traces`
-- `GET /solid_events/api/incidents/:id/context_bundle`
-- `GET /solid_events/api/incidents/:id/handoff`
+- `GET /solid_events/api/incidents/:id/context`
+- `GET /solid_events/api/incidents/:id/commands`
 - `PATCH /solid_events/api/incidents/:id/acknowledge|resolve|reopen`
 - `PATCH /solid_events/api/incidents/:id/assign` (`owner`, `team`)
 - `PATCH /solid_events/api/incidents/:id/mute` (`minutes`)
@@ -216,7 +216,7 @@ with `resolved_by` and `resolution_note`.
 Set `config.api_token` (or `SOLID_EVENTS_API_TOKEN`) to require `X-Solid-Events-Token` or `Authorization: Bearer <token>`.
 Set `config.evaluate_incidents_on_request = false` in production if you only want job-driven evaluation.
 
-The handoff endpoint returns a deterministic payload (`goal`, `evidence`, `constraints`, `next_actions`, `hints`) designed for fixer/reviewer/QA agents.
+The `context` and `commands` endpoints provide deterministic payloads for fixer/reviewer/QA agents.
 
 ### Scheduling (Production)
 

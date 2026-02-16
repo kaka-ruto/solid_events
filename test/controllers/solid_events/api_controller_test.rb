@@ -108,7 +108,7 @@ module SolidEvents
       assert_equal "deployed fix", incident.resolution_note
     end
 
-    test "incident context bundle returns links and evidence" do
+    test "incident context returns links and evidence" do
       trace = SolidEvents::Trace.create!(
         name: "orders.create",
         trace_type: "request",
@@ -128,7 +128,7 @@ module SolidEvents
         last_seen_at: Time.current
       )
 
-      get "/solid_events/api/incidents/#{incident.id}/context_bundle"
+      get "/solid_events/api/incidents/#{incident.id}/context"
       assert_response :success
       payload = JSON.parse(@response.body)
       assert_equal incident.id, payload["incident"]["id"]
@@ -137,7 +137,7 @@ module SolidEvents
       assert payload["links"]["traces_ui"].include?("name=orders.create")
     end
 
-    test "incident handoff returns deterministic remediation payload" do
+    test "incident commands returns deterministic remediation payload" do
       trace = SolidEvents::Trace.create!(
         name: "orders.create",
         trace_type: "request",
@@ -156,13 +156,13 @@ module SolidEvents
         last_seen_at: Time.current
       )
 
-      get "/solid_events/api/incidents/#{incident.id}/handoff"
+      get "/solid_events/api/incidents/#{incident.id}/commands"
       assert_response :success
       payload = JSON.parse(@response.body)
       assert_equal incident.id, payload["incident"]["id"]
       assert_equal "1", payload["constraints"]["schema_version"]
-      assert payload["next_actions"].any?
-      assert payload["hints"]["suggested_commands"].any?
+      assert payload["run_sequence"].any?
+      assert payload["suggested_commands"].any?
     end
 
     test "api token is enforced when configured" do

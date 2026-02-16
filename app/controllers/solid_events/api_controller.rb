@@ -27,7 +27,7 @@ module SolidEvents
       }
     end
 
-    def incident_context_bundle
+    def incident_context
       incident = SolidEvents::Incident.find(params[:id])
       traces = incident_related_traces(incident).includes(:error_links).limit(limit_param)
       error_ids = traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.compact.uniq
@@ -38,7 +38,8 @@ module SolidEvents
         evidence: {
           trace_count: traces.size,
           error_ids: error_ids,
-          traces: traces.map(&:canonical_event)
+          traces: traces.map(&:canonical_event),
+          solid_errors: fetch_solid_errors(error_ids)
         },
         suggested_filters: trace_query,
         links: {
@@ -89,35 +90,26 @@ module SolidEvents
       render json: serialize_incident(incident)
     end
 
-    def incident_handoff
+    def incident_commands
       incident = SolidEvents::Incident.find(params[:id])
       traces = incident_related_traces(incident).includes(:error_links, :summary).limit(limit_param)
       primary_trace = traces.first
 
       render json: {
-        goal: "Investigate and fix #{incident.kind} for #{incident.source}/#{incident.name}",
         incident: serialize_incident(incident),
-        evidence: {
-          trace_count: traces.size,
-          primary_trace: primary_trace&.canonical_event,
-          trace_ids: traces.map(&:id),
-          error_ids: traces.flat_map { |trace| trace.error_links.map(&:solid_error_id) }.uniq
-        },
+        suggested_commands: suggested_commands_for(incident: incident),
+        suspected_files: suspect_files_for(incident: incident, trace: primary_trace),
+        run_sequence: [
+          "Reproduce from incident context",
+          "Write/adjust failing test",
+          "Implement minimal fix",
+          "Run targeted tests",
+          "Run full suite",
+          "Resolve incident via API when verified"
+        ],
         constraints: {
           schema_version: SolidEvents.canonical_schema_version,
-          keep_regression_tests_green: true,
-          avoid_sensitive_data: true
-        },
-        next_actions: [
-          "Reproduce from primary trace/request context",
-          "Add or update a focused failing test",
-          "Implement minimal fix",
-          "Run targeted tests then full suite",
-          "Update incident status to resolved when verified"
-        ],
-        hints: {
-          suspected_files: suspect_files_for(incident: incident, trace: primary_trace),
-          suggested_commands: suggested_commands_for(incident: incident)
+          keep_regression_tests_green: true
         }
       }
     end
@@ -251,6 +243,23 @@ module SolidEvents
       render json: {error: "unauthorized"}, status: :unauthorized
     rescue StandardError
       render json: {error: "unauthorized"}, status: :unauthorized
+    end
+
+    def fetch_solid_errors(error_ids)
+      return [] if error_ids.empty?
+      return [] unless defined?(SolidErrors::Error)
+
+      errors = SolidErrors::Error.where(id: error_ids)
+      errors.map do |error|
+        {
+          id: error.id,
+          exception_class: error.try(:exception_class),
+          message: error.try(:message),
+          fingerprint: error.try(:fingerprint)
+        }
+      end
+    rescue StandardError
+      []
     end
   end
 end
