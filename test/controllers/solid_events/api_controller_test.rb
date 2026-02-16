@@ -339,9 +339,61 @@ module SolidEvents
       assert_equal "cohort_key is required", payload["error"]
     end
 
+    test "journeys endpoint groups traces by request id" do
+      request_id = "req-journey-1"
+      create_summary_for_metrics(
+        source: "CheckoutController#create",
+        status: "ok",
+        started_at: 10.minutes.ago,
+        request_id: request_id
+      )
+      create_summary_for_metrics(
+        source: "PaymentsController#create",
+        status: "error",
+        started_at: 9.minutes.ago,
+        request_id: request_id
+      )
+
+      get "/solid_events/api/journeys", params: {request_id: request_id, window: "24h"}
+      assert_response :success
+
+      payload = JSON.parse(@response.body)
+      journey = payload.fetch("journeys").first
+      assert_equal "request:#{request_id}", journey["journey_key"]
+      assert_equal 2, journey["trace_count"]
+      assert_equal 1, journey["error_count"]
+      assert_equal request_id, journey["request_id"]
+      assert_equal 2, journey.fetch("traces").size
+    end
+
+    test "journeys endpoint groups traces by entity when request id is absent" do
+      create_summary_for_metrics(
+        source: "OrdersController#create",
+        status: "ok",
+        started_at: 8.minutes.ago,
+        entity_type: "Order",
+        entity_id: 99
+      )
+      create_summary_for_metrics(
+        source: "OrdersController#update",
+        status: "error",
+        started_at: 7.minutes.ago,
+        entity_type: "Order",
+        entity_id: 99
+      )
+
+      get "/solid_events/api/journeys", params: {entity_type: "Order", entity_id: 99, window: "24h"}
+      assert_response :success
+      payload = JSON.parse(@response.body)
+      journey = payload.fetch("journeys").first
+      assert_equal "entity:Order:99", journey["journey_key"]
+      assert_equal 2, journey["trace_count"]
+      assert_equal 1, journey["error_count"]
+    end
+
     private
 
-    def create_summary_for_metrics(source:, status: "ok", duration_ms: 120.0, started_at: 5.minutes.ago, context: {})
+    def create_summary_for_metrics(source:, status: "ok", duration_ms: 120.0, started_at: 5.minutes.ago, context: {}, request_id: nil, entity_type: nil, entity_id: nil)
       trace = SolidEvents::Trace.create!(
         name: source.underscore.tr("#", "."),
         trace_type: "request",
@@ -356,6 +408,9 @@ module SolidEvents
         trace_type: trace.trace_type,
         source: source,
         status: status,
+        request_id: request_id,
+        entity_type: entity_type,
+        entity_id: entity_id,
         started_at: started_at,
         finished_at: started_at + 1.minute,
         duration_ms: duration_ms,

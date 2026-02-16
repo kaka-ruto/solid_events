@@ -16,6 +16,7 @@ SolidEvents::Engine.routes.draw do
   get "api/metrics/latency", to: "api#latency"
   get "api/metrics/compare", to: "api#compare_metrics"
   get "api/metrics/cohorts", to: "api#cohort_metrics"
+  get "api/journeys", to: "api#journeys"
   resources :incidents, only: [] do
     member do
       patch :acknowledge

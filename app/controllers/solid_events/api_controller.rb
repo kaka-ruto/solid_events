@@ -252,6 +252,43 @@ module SolidEvents
       }
     end
 
+    def journeys
+      return render json: {journeys: []} unless summary_table_available?
+
+      scope = summary_scope_for_metrics
+      scope = scope.where(request_id: params[:request_id].to_s) if params[:request_id].present?
+      if params[:entity_type].present?
+        scope = scope.where(entity_type: params[:entity_type].to_s)
+      end
+      if params[:entity_id].present?
+        scope = scope.where(entity_id: params[:entity_id].to_i)
+      end
+
+      traces_per_journey = [[params[:traces_per_journey].to_i, 1].max, 50].min
+      traces_per_journey = 20 if params[:traces_per_journey].blank?
+      rows = scope.includes(:trace).order(started_at: :desc).limit(2_000).to_a
+      grouped = rows.group_by { |summary| journey_key_for(summary) }.reject { |key, _| key.blank? }
+
+      journeys = grouped.map do |key, summaries|
+        ordered = summaries.sort_by(&:started_at)
+        traces = ordered.last(traces_per_journey).map { |summary| summary.trace.canonical_event }
+        {
+          journey_key: key,
+          request_id: ordered.last.request_id,
+          entity_type: ordered.last.entity_type,
+          entity_id: ordered.last.entity_id,
+          trace_count: summaries.size,
+          error_count: summaries.count { |summary| summary.status == "error" },
+          started_at: ordered.first.started_at,
+          finished_at: ordered.last.finished_at || ordered.last.started_at,
+          traces: traces
+        }
+      end
+
+      sorted = journeys.sort_by { |journey| journey[:finished_at] || Time.at(0) }.reverse.first(limit_param)
+      render json: {window: metric_window_param, journeys: sorted}
+    end
+
     private
 
     def serialize_incident(incident)
@@ -515,6 +552,13 @@ module SolidEvents
             avg_duration_ms: avg_duration_ms.to_f.round(2)
           }
         end
+    end
+
+    def journey_key_for(summary)
+      return "request:#{summary.request_id}" if summary.request_id.present?
+      return "entity:#{summary.entity_type}:#{summary.entity_id}" if summary.entity_type.present? && summary.entity_id.present?
+
+      nil
     end
 
     def default_metric_stats
