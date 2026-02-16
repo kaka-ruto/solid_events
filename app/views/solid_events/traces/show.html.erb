@@ -1,0 +1,94 @@
+<div class="card">
+  <div class="trace-header">
+    <h2>Trace #<%= @trace.id %> - <%= @trace.name %></h2>
+    <%= link_to "Back to Traces", traces_path, class: "button button-muted" %>
+  </div>
+  <p>
+    Type: <strong><%= @trace.trace_type %></strong> |
+    Source: <strong><%= @trace.source %></strong> |
+    Status: <span class="badge <%= trace_status_badge(@trace.status) %>"><%= @trace.status %></span> |
+    Duration: <strong><%= formatted_trace_duration(@trace) %></strong>
+  </p>
+  <p class="muted">
+    Started: <%= absolute_time(@trace.started_at) %> |
+    Finished: <%= absolute_time(@trace.finished_at) %>
+  </p>
+</div>
+
+<div class="stats-grid">
+  <div class="card stat"><span class="label">Events</span><strong><%= @events.size %></strong></div>
+  <div class="card stat"><span class="label">Record Links</span><strong><%= @record_links.size %></strong></div>
+  <div class="card stat"><span class="label">Error Links</span><strong><%= @error_links.size %></strong></div>
+  <div class="card stat"><span class="label">Event Types</span><strong><%= @event_counts.keys.sort.join(", ").presence || "none" %></strong></div>
+</div>
+
+<div class="card">
+  <h3>Context</h3>
+  <% if @trace.context.present? %>
+    <pre><%= JSON.pretty_generate(@trace.context) %></pre>
+  <% else %>
+    <p class="muted">No context captured.</p>
+  <% end %>
+</div>
+
+<div class="card">
+  <h3>Trace Waterfall</h3>
+  <div class="table-scroll">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>At</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Duration</th>
+          <th>Payload</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @events.each do |event| %>
+          <tr>
+            <td title="<%= absolute_time(event.occurred_at) %>"><%= relative_time(event.occurred_at) %></td>
+            <td><span class="badge muted"><%= event.event_type %></span></td>
+            <td><code><%= event.name %></code></td>
+            <td><%= event.duration_ms ? "#{event.duration_ms} ms" : "n/a" %></td>
+            <td>
+              <details>
+                <summary><%= event_payload_summary(event) %></summary>
+                <pre><%= JSON.pretty_generate(event.payload || {}) %></pre>
+              </details>
+            </td>
+          </tr>
+        <% end %>
+        <% if @events.empty? %>
+          <tr>
+            <td colspan="5" class="muted">No events captured for this trace.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Record Links</h3>
+  <ul>
+    <% @record_links.each do |link| %>
+      <li><code><%= link.record_type %>#<%= link.record_id %></code></li>
+    <% end %>
+    <% if @record_links.empty? %>
+      <li class="muted">No records linked.</li>
+    <% end %>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>Error Links</h3>
+  <ul>
+    <% @error_links.each do |link| %>
+      <li><%= link_to "SolidError ##{link.solid_error_id}", "/solid_errors/#{link.solid_error_id}" %></li>
+    <% end %>
+    <% if @error_links.empty? %>
+      <li class="muted">No errors linked.</li>
+    <% end %>
+  </ul>
+</div>

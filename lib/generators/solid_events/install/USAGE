@@ -1,0 +1,4 @@
+Add a `solid_events` database in `config/database.yml` and load `db/events_schema.rb`.
+Mount the UI in routes:
+
+  mount SolidEvents::Engine, at: "/solid_events"

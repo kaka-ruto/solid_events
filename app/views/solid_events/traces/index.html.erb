@@ -1,0 +1,115 @@
+<div class="card">
+  <h2>Context Graph</h2>
+  <%= form_with url: traces_path, method: :get, local: true do |f| %>
+    <div class="filters-grid">
+      <div>
+        <%= f.label :q, "Search" %>
+        <%= f.text_field :q, value: @query, placeholder: "Trace, source, record type/id" %>
+      </div>
+      <div>
+        <%= f.label :status, "Status" %>
+        <%= f.select :status, options_for_select([["All", ""], ["Error", "error"], ["OK", "ok"]], @status) %>
+      </div>
+      <div>
+        <%= f.label :trace_type, "Type" %>
+        <%= f.select :trace_type, options_for_select([["All", ""]] + @trace_type_options.map { |type| [type.to_s.titleize, type] }, @trace_type) %>
+      </div>
+      <div>
+        <%= f.label :source, "Source contains" %>
+        <%= f.text_field :source, value: @source, placeholder: "Controller, Job..." %>
+      </div>
+      <div>
+        <%= f.label :context_key, "Context key" %>
+        <%= f.text_field :context_key, value: @context_key, placeholder: "e.g. project_id" %>
+      </div>
+      <div>
+        <%= f.label :context_id, "Context value" %>
+        <%= f.text_field :context_id, value: @context_id, placeholder: "e.g. 123" %>
+      </div>
+      <div>
+        <%= f.label :window, "Time window" %>
+        <%= f.select :window, options_for_select([["1 hour", "1h"], ["24 hours", "24h"], ["7 days", "7d"], ["All", "all"]], @window) %>
+      </div>
+      <div>
+        <%= f.label :per_page, "Rows per page" %>
+        <%= f.select :per_page, options_for_select([25, 50, 100], @per_page) %>
+      </div>
+    </div>
+    <div class="actions">
+      <%= f.submit "Apply Filters" %>
+      <%= link_to "Reset", traces_path, class: "button button-muted" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="stats-grid">
+  <div class="card stat">
+    <span class="label">Showing</span>
+    <strong><%= @traces.size %></strong>
+  </div>
+  <div class="card stat">
+    <span class="label">Filtered Total</span>
+    <strong><%= @total_count %></strong>
+  </div>
+  <div class="card stat">
+    <span class="label">Errors</span>
+    <strong><%= @error_count %></strong>
+  </div>
+  <div class="card stat">
+    <span class="label">Page</span>
+    <strong><%= @page %>/<%= [@page_count, 1].max %></strong>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-scroll">
+    <table class="traces-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Source</th>
+        <th>Duration</th>
+        <th>Events</th>
+        <th>Records</th>
+        <th>Errors</th>
+        <th>Started</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @traces.each do |trace| %>
+        <tr>
+          <td><%= link_to trace.id, trace_path(trace) %></td>
+          <td><%= trace.name %></td>
+          <td><%= trace.trace_type %></td>
+          <td><span class="badge <%= trace_status_badge(trace.status) %>"><%= trace.status %></span></td>
+          <td><%= trace.source %></td>
+          <td><%= formatted_trace_duration(trace) %></td>
+          <td><%= trace.events.size %></td>
+          <td><%= trace.record_links.size %></td>
+          <td><%= trace.error_links.size %></td>
+          <td title="<%= absolute_time(trace.started_at) %>"><%= relative_time(trace.started_at) %></td>
+        </tr>
+      <% end %>
+      <% if @traces.empty? %>
+        <tr>
+          <td colspan="10" class="muted">No traces found for the current filters.</td>
+        </tr>
+      <% end %>
+    </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="pagination">
+  <% if @page > 1 %>
+    <%= link_to "Previous", traces_path(request.query_parameters.merge(page: @page - 1)), class: "button button-muted" %>
+  <% else %>
+    <span></span>
+  <% end %>
+  <% if @page < @page_count %>
+    <%= link_to "Next", traces_path(request.query_parameters.merge(page: @page + 1)), class: "button button-muted" %>
+  <% end %>
+</div>
