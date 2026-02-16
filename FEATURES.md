@@ -90,7 +90,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Redact sensitive keys in context/payload before persistence/log emission
 - [x] Emit canonical JSON log line per sampled trace for log pipeline compatibility
 - [ ] Configurable PII policies per field path (not just key-name matching)
-- [ ] Optional payload truncation/size guards with visibility counters
+- [x] Optional payload truncation/size guards with visibility counters
 
 ## 8) UI workflows for investigations
 
@@ -104,6 +104,7 @@ Important: these are outcome examples, not a requirement to build natural-langua
 - [x] Saved views / shareable investigation links
 - [x] UI compare mode (release A vs release B, cohort A vs cohort B)
 - [x] Timeline view optimized for “tell me what happened” narratives
+- [x] Timeline includes incident lifecycle markers for richer narrative context
 
 ## 9) Agent-readiness (observability side only)
 

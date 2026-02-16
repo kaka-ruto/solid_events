@@ -172,6 +172,9 @@
 
 <div class="card">
   <h3>Saved Views</h3>
+  <% if @active_shared_view_label.present? %>
+    <p class="muted">Shared view: <strong><%= @active_shared_view_label %></strong></p>
+  <% end %>
   <%= form_with url: saved_views_path, method: :post, local: true do |f| %>
     <div class="filters-grid">
       <div>
@@ -208,6 +211,7 @@
             <td title="<%= absolute_time(saved_view.created_at) %>"><%= relative_time(saved_view.created_at) %></td>
             <td>
               <%= link_to "Apply", traces_path(saved_view_id: saved_view.id), class: "button button-muted" %>
+              <%= link_to "Share", @saved_view_share_links[saved_view.id], class: "button button-muted" %>
               <%= button_to "Delete", saved_view_path(saved_view), method: :delete, class: "button button-muted" %>
             </td>
           </tr>

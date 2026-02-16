@@ -54,13 +54,16 @@ Stop renting your data.
 - **🎯 Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
 - **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
 - **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
+- **🧯 Payload Size Guards:** Truncates oversized context/event payloads using configurable limits.
 - **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
 - **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
 - **🤖 Consumer APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
 - **📈 Compare Mode:** UI + API support for window-over-window error-rate and latency comparisons.
 - **🧭 Journey Sequences:** UI panel + API to reconstruct request/entity trace sequences for story-first debugging.
 - **🕒 Timeline View:** Ordered cross-trace timeline for request/entity investigations.
+- **📌 Incident Timeline Markers:** Timeline view includes incident lifecycle milestones.
 - **💾 Saved Views:** Persist and re-apply investigation filters directly from the traces dashboard.
+- **🔗 Shared View Links:** Generate immutable shared-view URLs from saved filters for team handoff.
 - **🔐 API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
 - **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
@@ -176,6 +179,9 @@ SolidEvents.configure do |config|
   # 9. Redaction policy
   config.sensitive_keys += ["customer_email", "phone_number"]
   config.redaction_placeholder = "[FILTERED]"
+  config.max_context_payload_bytes = 16_384
+  config.max_event_payload_bytes = 8_192
+  config.payload_truncation_placeholder = "[TRUNCATED]"
 
   # 10. Feature slice dimensions captured into canonical payloads
   config.feature_slice_keys = %w[feature_flag experiment release_channel plan]

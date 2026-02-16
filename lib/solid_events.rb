@@ -113,6 +113,18 @@ module SolidEvents
       configuration.redaction_placeholder.to_s
     end
 
+    def max_context_payload_bytes
+      configuration.max_context_payload_bytes.to_i
+    end
+
+    def max_event_payload_bytes
+      configuration.max_event_payload_bytes.to_i
+    end
+
+    def payload_truncation_placeholder
+      configuration.payload_truncation_placeholder.to_s
+    end
+
     def wide_event_primary?
       !!configuration.wide_event_primary
     end

@@ -9,12 +9,16 @@ module SolidEvents
 
     def start_trace!(name:, trace_type:, source:, context: {})
       return unless storage_available?
+      context_payload = guarded_payload(
+        redact_hash(normalize_context(context)),
+        max_bytes: SolidEvents.max_context_payload_bytes
+      )
 
       trace = SolidEvents::Trace.create!(
         name: name,
         trace_type: trace_type,
         source: source,
-        context: redact_hash(normalize_context(context)),
+        context: context_payload,
         started_at: Time.current
       )
       SolidEvents::Current.trace = trace
@@ -34,7 +38,10 @@ module SolidEvents
 
       existing_context = normalize_context(trace.context.to_h)
       extra_context = normalize_context(context)
-      final_context = redact_hash(existing_context.merge(extra_context))
+      final_context = guarded_payload(
+        redact_hash(existing_context.merge(extra_context)),
+        max_bytes: SolidEvents.max_context_payload_bytes
+      )
       trace.update!(status: status, finished_at: Time.current, context: final_context)
 
       unless keep_trace?(trace, context: final_context)
@@ -70,10 +77,14 @@ module SolidEvents
       SolidEvents::Current.trace_metrics = metrics
 
       if !SolidEvents.wide_event_primary? || SolidEvents.persist_sub_events?
+        payload_for_event = guarded_payload(
+          redact_hash(normalize_context(payload)),
+          max_bytes: SolidEvents.max_event_payload_bytes
+        )
         trace.events.create!(
           event_type: event_type,
           name: name,
-          payload: redact_hash(normalize_context(payload)),
+          payload: payload_for_event,
           duration_ms: duration_ms,
           occurred_at: Time.current
         )
@@ -88,7 +99,12 @@ module SolidEvents
       return unless trace
 
       existing_context = normalize_context(trace.context.to_h)
-      trace.update!(context: redact_hash(existing_context.merge(normalize_context(context))))
+      trace.update!(
+        context: guarded_payload(
+          redact_hash(existing_context.merge(normalize_context(context))),
+          max_bytes: SolidEvents.max_context_payload_bytes
+        )
+      )
       upsert_summary!(trace)
       trace
     end
@@ -478,6 +494,20 @@ module SolidEvents
       else
         value
       end
+    end
+
+    def guarded_payload(value, max_bytes:)
+      serialized = JSON.generate(value)
+      return value if serialized.bytesize <= max_bytes
+
+      {
+        "_truncated" => true,
+        "_original_bytes" => serialized.bytesize,
+        "_max_bytes" => max_bytes,
+        "_value" => SolidEvents.payload_truncation_placeholder
+      }
+    rescue StandardError
+      value
     end
 
     def sensitive_key?(key)

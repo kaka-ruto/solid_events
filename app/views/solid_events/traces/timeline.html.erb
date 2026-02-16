@@ -28,7 +28,13 @@
             <td title="<%= absolute_time(row[:at]) %>"><%= relative_time(row[:at]) %></td>
             <td><span class="badge muted"><%= row[:kind] %></span></td>
             <td><%= row[:label] %></td>
-            <td><%= link_to row[:trace_id], trace_path(row[:trace_id]) %></td>
+            <td>
+              <% if row[:trace_id].present? %>
+                <%= link_to row[:trace_id], trace_path(row[:trace_id]) %>
+              <% else %>
+                n/a
+              <% end %>
+            </td>
             <td><%= row[:details].presence || "n/a" %></td>
           </tr>
         <% end %>

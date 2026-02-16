@@ -121,6 +121,58 @@ module SolidEvents
       get "/solid_events"
       assert_response :success
       assert_includes @response.body, saved_view.name
+      assert_includes @response.body, "Share"
+    end
+
+    test "saved view list renders immutable share token links" do
+      SolidEvents::SavedView.create!(
+        name: "Shared checkout errors",
+        filters: {"source" => "CheckoutController#create", "status" => "error"}
+      )
+
+      get "/solid_events"
+      assert_response :success
+      assert_includes @response.body, "Share"
+      assert_includes @response.body, "shared_view="
+    end
+
+    test "timeline includes incident lifecycle markers" do
+      trace = SolidEvents::Trace.create!(
+        name: "checkout.create",
+        trace_type: "request",
+        source: "CheckoutController#create",
+        status: "error",
+        started_at: Time.current
+      )
+      trace.create_summary!(
+        name: trace.name,
+        trace_type: trace.trace_type,
+        source: trace.source,
+        status: trace.status,
+        request_id: "req-lifecycle-1",
+        started_at: trace.started_at,
+        finished_at: trace.started_at + 1.minute
+      )
+      incident = SolidEvents::Incident.create!(
+        kind: "error_spike",
+        severity: "critical",
+        status: "resolved",
+        source: trace.source,
+        name: trace.name,
+        payload: {},
+        detected_at: 3.minutes.ago,
+        last_seen_at: 2.minutes.ago,
+        assigned_at: 2.minutes.ago,
+        acknowledged_at: 90.seconds.ago,
+        resolved_at: 30.seconds.ago
+      )
+      incident.update!(muted_until: 10.minutes.from_now)
+
+      get "/solid_events/timeline", params: {request_id: "req-lifecycle-1", window: "24h"}
+      assert_response :success
+      assert_includes @response.body, "incident detected: error_spike"
+      assert_includes @response.body, "incident acknowledged: error_spike"
+      assert_includes @response.body, "incident resolved: error_spike"
     end
 
     test "index compare panel supports custom windows and metrics" do

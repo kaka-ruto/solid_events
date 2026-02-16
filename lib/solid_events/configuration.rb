@@ -35,7 +35,9 @@ module SolidEvents
                   :incident_error_spike_threshold_pct, :incident_p95_regression_factor,
                   :incident_min_samples, :incident_dedupe_window,
                   :incident_suppression_rules, :incident_notifier, :api_token,
-                  :evaluate_incidents_on_request, :feature_slice_keys
+                  :evaluate_incidents_on_request, :feature_slice_keys,
+                  :max_context_payload_bytes, :max_event_payload_bytes,
+                  :payload_truncation_placeholder
     attr_reader :ignore_models
 
     def initialize
@@ -69,6 +71,9 @@ module SolidEvents
         encrypted encrypted_password credit_card card_number cvv ssn otp
       ]
       @redaction_placeholder = "[REDACTED]"
+      @max_context_payload_bytes = 16_384
+      @max_event_payload_bytes = 8_192
+      @payload_truncation_placeholder = "[TRUNCATED]"
       @wide_event_primary = false
       @persist_sub_events = true
       @incident_error_spike_threshold_pct = 20.0

@@ -10,6 +10,7 @@ module SolidEvents
     before_action :set_trace, only: :show
 
     def index
+      apply_shared_view!
       apply_saved_view!
       @query = params[:q].to_s.strip
       @status = params[:status].to_s
@@ -146,6 +147,7 @@ module SolidEvents
         end
         base + events
       end.sort_by { |row| row[:at] || Time.at(0) }
+      append_incident_lifecycle_rows!(summaries)
     end
 
     def show
@@ -158,6 +160,23 @@ module SolidEvents
     end
 
     private
+
+    def apply_shared_view!
+      token = params[:shared_view].to_s
+      return if token.blank?
+      return unless request.get?
+
+      decoded = shared_view_verifier.verified(token)
+      return unless decoded.is_a?(Hash)
+
+      filters = decoded["filters"].to_h.transform_keys(&:to_s)
+      filters.each do |key, value|
+        params[key] = value if params[key].blank?
+      end
+      @active_shared_view_label = decoded["label"].to_s.presence
+    rescue StandardError
+      nil
+    end
 
     def apply_saved_view!
       saved_view = SolidEvents::SavedView.find_by(id: params[:saved_view_id])
@@ -582,6 +601,9 @@ module SolidEvents
       else
         []
       end
+      @saved_view_share_links = @saved_views.each_with_object({}) do |saved_view, memo|
+        memo[saved_view.id] = traces_path(shared_view: shared_view_verifier.generate(shared_view_payload(saved_view)))
+      end
     end
 
     def incident_table_available?
@@ -594,6 +616,22 @@ module SolidEvents
       @saved_views_table_available ||= SolidEvents::SavedView.connection.data_source_exists?(SolidEvents::SavedView.table_name)
     rescue StandardError
       false
+    end
+
+    def shared_view_payload(saved_view)
+      {
+        "label" => saved_view.name.to_s,
+        "filters" => saved_view.filters.to_h,
+        "generated_at" => Time.current.iso8601
+      }
+    end
+
+    def shared_view_verifier
+      @shared_view_verifier ||= ActiveSupport::MessageVerifier.new(
+        Rails.application.secret_key_base,
+        digest: "SHA256",
+        serializer: JSON
+      )
     end
 
     def build_incident_journey_link(incident)
@@ -634,6 +672,39 @@ module SolidEvents
       summaries.first
     rescue StandardError
       nil
+    end
+
+    def append_incident_lifecycle_rows!(summaries)
+      pairs = summaries.map { |summary| [summary.name, summary.source] }.uniq
+      incidents = pairs.flat_map do |name, source|
+        SolidEvents::Incident.where(name: name, source: source).limit(20).to_a
+      end.uniq(&:id)
+      incident_rows = incidents.flat_map { |incident| lifecycle_rows_for(incident) }
+      @timeline_rows = (@timeline_rows + incident_rows).sort_by { |row| row[:at] || Time.at(0) }
+    rescue StandardError
+      @timeline_rows ||= []
+    end
+
+    def lifecycle_rows_for(incident)
+      rows = []
+      rows << lifecycle_row(incident.detected_at, "detected", incident)
+      rows << lifecycle_row(incident.assigned_at, "assigned", incident) if incident.assigned_at.present?
+      rows << lifecycle_row(incident.acknowledged_at, "acknowledged", incident) if incident.acknowledged_at.present?
+      rows << lifecycle_row(incident.updated_at, "muted", incident) if incident.muted_until.present?
+      rows << lifecycle_row(incident.resolved_at, "resolved", incident) if incident.resolved_at.present?
+      rows.compact
+    end
+
+    def lifecycle_row(timestamp, action, incident)
+      return nil unless timestamp
+
+      {
+        at: timestamp,
+        kind: "incident",
+        label: "incident #{action}: #{incident.kind}",
+        trace_id: nil,
+        details: "status=#{incident.status} severity=#{incident.severity} id=#{incident.id}"
+      }
     end
   end
 end

@@ -316,6 +316,36 @@ module SolidEvents
       SolidEvents.configuration.redaction_placeholder = previous_placeholder
     end
 
+    test "truncates oversized context and event payloads with guard metadata" do
+      previous_context_max = SolidEvents.configuration.max_context_payload_bytes
+      previous_event_max = SolidEvents.configuration.max_event_payload_bytes
+      SolidEvents.configuration.max_context_payload_bytes = 50
+      SolidEvents.configuration.max_event_payload_bytes = 50
+
+      trace = SolidEvents::Tracer.start_trace!(
+        name: "oversized.payload",
+        trace_type: "request",
+        source: "PayloadsController#create",
+        context: {blob: "x" * 500}
+      )
+      SolidEvents::Tracer.record_event!(
+        event_type: "custom",
+        name: "oversized.event",
+        payload: {blob: "y" * 500}
+      )
+      SolidEvents::Tracer.finish_trace!(status: "ok")
+
+      trace.reload
+      event_payload = trace.events.first.payload.to_h
+      assert_equal true, trace.context["_truncated"]
+      assert_equal true, event_payload["_truncated"]
+      assert_equal "[TRUNCATED]", trace.context["_value"]
+      assert_equal "[TRUNCATED]", event_payload["_value"]
+    ensure
+      SolidEvents.configuration.max_context_payload_bytes = previous_context_max
+      SolidEvents.configuration.max_event_payload_bytes = previous_event_max
+    end
+
     test "wide event primary mode can skip sub-event rows while preserving summary metrics" do
       previous_wide = SolidEvents.configuration.wide_event_primary
       previous_persist = SolidEvents.configuration.persist_sub_events

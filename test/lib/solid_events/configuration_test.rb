@@ -63,6 +63,9 @@ module SolidEvents
       assert_predicate configuration.environment_name, :present?
       assert_includes configuration.sensitive_keys, "password"
       assert_equal "[REDACTED]", configuration.redaction_placeholder
+      assert_equal 16_384, configuration.max_context_payload_bytes
+      assert_equal 8_192, configuration.max_event_payload_bytes
+      assert_equal "[TRUNCATED]", configuration.payload_truncation_placeholder
       assert_equal false, configuration.wide_event_primary
       assert_equal true, configuration.persist_sub_events
       assert_equal 20.0, configuration.incident_error_spike_threshold_pct
