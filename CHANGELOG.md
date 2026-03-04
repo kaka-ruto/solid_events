@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.1] - 2026-03-04
+
+- Added GitHub CI workflow to run the test suite on push/pull request.
+- Improved local release workflow compatibility by adding a repo-level `cleo.yml`.
+- Added QA bootstrap files (`.github/pull_request_template.md` and `.github/workflows/qa.yml`) for consistent quality workflow setup.
+- Updated README formatting by removing emoji-prefixed headings and feature bullets.
+- Updated gem version to `0.2.1`.
+
 ## [0.2.0] - 2026-02-16
 
 - Expanded tracing beyond controller/job/SQL into Action Cable, mailer, and external HTTP spans with async causal links across request/job chains.
