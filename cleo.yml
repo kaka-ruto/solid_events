@@ -1,0 +1,62 @@
+version: 1
+
+github:
+  owner: kaka-ruto
+  repo: solid_events
+  host: github.com
+  base_branch: master
+  merge_method: merge
+  delete_branch_on_merge: false
+
+pr:
+  required_approvals: 1
+  require_non_draft: true
+  require_mergeable: true
+  block_if_requested_changes: true
+  allow_self_approval: false
+  checks:
+    mode: required
+    required: []
+    ignore: []
+    treat_neutral_as_pass: false
+    timeout_seconds: 1800
+    poll_interval_seconds: 10
+  deploy_watch:
+    enabled: false
+    workflow: Deploy to Production
+    branch: master
+    timeout_seconds: 2700
+    poll_interval_seconds: 10
+  post_merge:
+    enabled: false
+    require_command_allowlist: false
+    command_allowlist_prefixes: []
+    command_denylist:
+      - "rm -rf /"
+    markers:
+      start: "<!-- post-merge-commands:start -->"
+      end: "<!-- post-merge-commands:end -->"
+    allow_none: true
+  stack:
+    rebase_next_after_merge: false
+    auto_detect_next_pr: false
+    force_with_lease: true
+
+safety:
+  require_explicit_apply: true
+
+release:
+  tag_prefix: "v"
+  changelog_file: "CHANGELOG.md"
+  binary_name: "solid_events"
+  build_target: "."
+  generate_notes: true
+  default_draft: false
+
+qa:
+  actors_dir: ".cleo/qa/actors"
+  evidence_dir: ".cleo/evidence"
+  default_actors:
+    - "core"
+  manual:
+    enabled: true
