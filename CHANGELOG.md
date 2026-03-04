@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [0.2.1] - 2026-03-04
 
 - Added GitHub CI workflow to run the test suite on push/pull request.
+- Fixed dummy test app bootstrapping by disabling `maintain_test_schema` to prevent pending-migration failures in clean test runs.
 - Improved local release workflow compatibility by adding a repo-level `cleo.yml`.
 - Added QA bootstrap files (`.github/pull_request_template.md` and `.github/workflows/qa.yml`) for consistent quality workflow setup.
 - Updated README formatting by removing emoji-prefixed headings and feature bullets.
