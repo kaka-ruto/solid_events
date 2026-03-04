@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## [0.2.1] - 2026-03-04
+## [v0.2.1] - 2026-03-04
 
 - Added GitHub CI workflow to run the test suite on push/pull request.
 - Fixed dummy test app bootstrapping by disabling `maintain_test_schema` to prevent pending-migration failures in clean test runs.
@@ -11,7 +11,7 @@ All notable changes to this project are documented in this file.
 - Updated README formatting by removing emoji-prefixed headings and feature bullets.
 - Updated gem version to `0.2.1`.
 
-## [0.2.0] - 2026-02-16
+## [v0.2.0] - 2026-02-16
 
 - Expanded tracing beyond controller/job/SQL into Action Cable, mailer, and external HTTP spans with async causal links across request/job chains.
 - Established canonical wide-event summaries (`solid_events_summaries`) with schema versioning, HTTP/timing/SQL/error/entity dimensions, and deploy/service metadata.
@@ -28,7 +28,7 @@ All notable changes to this project are documented in this file.
 - Updated ignored generated test artifacts to exclude additional dummy SQLite output under `test/dummy/storage`.
 - Updated development lockfile metadata for Ruby `4.0.1`.
 
-## [0.1.0] - 2026-02-16
+## [v0.1.0] - 2026-02-16
 
 - Initial release of `solid_events`.
 - Added Rails engine install generator and schema setup.
