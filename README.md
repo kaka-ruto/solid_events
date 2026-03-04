@@ -19,7 +19,7 @@ It does **not** execute automation workflows (code fixes, PR creation, QA runs).
 
 ---
 
-## 🧐 The "Why"
+## The "Why"
 
 ### 1. Logs are Ephemeral, Decisions are Permanent
 
@@ -43,35 +43,35 @@ Stop renting your data.
 
 ---
 
-## 🛠 Features
+## Features
 
-- **⚡️ Auto-Instrumentation:** Automatically captures Controller Actions, Active Job executions, and SQL queries via `ActiveSupport::Notifications`.
-- **🔗 Auto-Linking:** Automatically detects when an ActiveRecord model is created or updated during a request and links it to the Trace. (e.g., `Order.create` -> Linked to Trace).
-- **🤖 Auto-Labeling:** Intelligently maps controller actions to business terms (e.g., `OrdersController#create` becomes `order.created`).
-- **👤 Context Scraping:** Automatically detects `current_user`, `current_account`, or `tenant_id` from your controllers and tags the trace.
-- **📊 Canonical Wide Events:** Maintains one summary row per trace with outcome, entity, HTTP, timing, and correlation fields for fast filtering.
-- **🧾 Stable Schema Versioning:** Canonical events include `schema_version` for agent-safe parsing across upgrades.
-- **🎯 Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
-- **🚢 Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
-- **🔒 PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
-- **🧯 Payload Size Guards:** Truncates oversized context/event payloads using configurable limits.
-- **🧬 Path-Based Redaction:** Supports exact field-path redaction rules in addition to key matching.
-- **🧱 Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
-- **🧹 Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
-- **🤖 Consumer APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
-- **📈 Compare Mode:** UI + API support for window-over-window error-rate and latency comparisons.
-- **🧭 Journey Sequences:** UI panel + API to reconstruct request/entity trace sequences for story-first debugging.
-- **🕒 Timeline View:** Ordered cross-trace timeline for request/entity investigations.
-- **📌 Incident Timeline Markers:** Timeline view includes incident lifecycle milestones.
-- **💾 Saved Views:** Persist and re-apply investigation filters directly from the traces dashboard.
-- **🔗 Shared View Links:** Generate immutable shared-view URLs from saved filters for team handoff.
-- **🔐 API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
-- **📦 JSON Export:** Export filtered traces/incidents as JSON snapshots for handoff and auditing.
-- **📡 Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
+- **Auto-Instrumentation:** Automatically captures Controller Actions, Active Job executions, and SQL queries via `ActiveSupport::Notifications`.
+- **Auto-Linking:** Automatically detects when an ActiveRecord model is created or updated during a request and links it to the Trace. (e.g., `Order.create` -> Linked to Trace).
+- **Auto-Labeling:** Intelligently maps controller actions to business terms (e.g., `OrdersController#create` becomes `order.created`).
+- **Context Scraping:** Automatically detects `current_user`, `current_account`, or `tenant_id` from your controllers and tags the trace.
+- **Canonical Wide Events:** Maintains one summary row per trace with outcome, entity, HTTP, timing, and correlation fields for fast filtering.
+- **Stable Schema Versioning:** Canonical events include `schema_version` for agent-safe parsing across upgrades.
+- **Tail Sampling:** Keeps all failures and slow traces, then samples low-value successes by configurable rate.
+- **Deploy-Aware Dimensions:** Captures service/environment/version/deployment/region on every canonical trace.
+- **PII Redaction:** Redacts sensitive context/payload keys before persisting events and emitting logs.
+- **Payload Size Guards:** Truncates oversized context/event payloads using configurable limits.
+- **Path-Based Redaction:** Supports exact field-path redaction rules in addition to key matching.
+- **Wide-Event Primary Mode:** Optionally skip sub-event row persistence while keeping canonical trace summaries complete.
+- **Retention Tiers:** Keep success traces, error traces, and incidents for different durations.
+- **Consumer APIs:** JSON endpoints for incidents and canonical traces at `/solid_events/api/...`.
+- **Compare Mode:** UI + API support for window-over-window error-rate and latency comparisons.
+- **Journey Sequences:** UI panel + API to reconstruct request/entity trace sequences for story-first debugging.
+- **Timeline View:** Ordered cross-trace timeline for request/entity investigations.
+- **Incident Timeline Markers:** Timeline view includes incident lifecycle milestones.
+- **Saved Views:** Persist and re-apply investigation filters directly from the traces dashboard.
+- **Shared View Links:** Generate immutable shared-view URLs from saved filters for team handoff.
+- **API Token Auth:** Optional token protection for all `/solid_events/api/*` endpoints.
+- **JSON Export:** Export filtered traces/incidents as JSON snapshots for handoff and auditing.
+- **Rails 8 Native:** Built on top of the new [Rails 8 Event Reporter API](https://api.rubyonrails.org/classes/ActiveSupport/EventReporter.html) and `SolidQueue` standards.
 
 ---
 
-## 📦 Installation
+## Installation
 
 Add this line to your application's Gemfile:
 
@@ -103,7 +103,7 @@ gem "solid_errors"
 
 ---
 
-## 🚀 Zero-Configuration Behavior
+## Zero-Configuration Behavior
 
 Once installed, `SolidEvents` starts working immediately. You do **not** need to change your code.
 
@@ -134,7 +134,7 @@ If your controller has a `current_user` method (Devise/standard pattern), we aut
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 We provide sane defaults (ignoring internal Rails tables), but you can tune exactly what gets tracked.
 
@@ -373,7 +373,7 @@ This gives a full closed-loop process without depending on raw Rails logs.
 
 ---
 
-## 🕵️‍♀️ The Dashboard (Mission Control)
+## The Dashboard (Mission Control)
 
 Mount the dashboard in your `config/routes.rb` to view your Context Graph.
 
@@ -404,7 +404,7 @@ end
 
 ---
 
-## 🔮 The Future: SolidCopilot
+## The Future: SolidCopilot
 
 `SolidEvents` is the data foundation for **SolidCopilot**, an AI agent that uses this data to:
 
@@ -416,7 +416,7 @@ _(Coming Soon)_
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 This project is open source (MIT). We welcome contributions that align with the **"Solid"** philosophy: simple, SQL-backed, and Rails-native.
 
