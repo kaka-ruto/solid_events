@@ -22,12 +22,5 @@ module SolidEvents
       end
     end
 
-    def ensure_migrations_directory
-      empty_directory "db/events_migrate"
-      keep_path = Pathname(destination_root).join("db/events_migrate/.gitkeep")
-      return if keep_path.exist?
-
-      create_file "db/events_migrate/.gitkeep", "# Keep the SolidEvents migrations directory tracked by Git.\n"
-    end
   end
 end

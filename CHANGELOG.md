@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [v0.2.4] - 2026-03-11
+
+- Switched installer guidance to schema-first events setup (`db/events_schema.rb`) to match solid_errors-style deployment flow.
+- Removed migration-copy install flow from generator/tasks to avoid schema + replay drift in app installs.
+
 ## [v0.2.3] - 2026-03-11
 
 - Aligned installer/task conventions with sibling Solid gems: use `events` database key, `db/events_schema.rb`, and `db/events_migrate`.

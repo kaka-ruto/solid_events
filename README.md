@@ -86,11 +86,10 @@ rails generate solid_events:install
 rails db:migrate
 ```
 
-If your app uses an isolated `events` database (`db/events_migrate`), run:
+If your app uses an isolated `events` database, rely on `db/events_schema.rb` (schema-first) and run:
 
 ```bash
-rails solid_events:install:events_migrations
-rails db:migrate:events
+rails db:prepare
 ```
 
 ### Recommended: SolidErrors
