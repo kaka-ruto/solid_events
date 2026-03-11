@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [v0.2.2] - 2026-03-11
+
+- Fixed installer production config to use `config.solid_events.connects_to = { database: { writing: :events } }` so generated config matches common `database.yml` naming.
+- Made installer-copied event migrations idempotent (`column_exists?`/`index_exists?`/`table_exists?` guards) to prevent duplicate table/column/index failures when `db:prepare` loads `db/events_schema.rb` before migrations.
+
 ## [v0.2.1] - 2026-03-04
 
 - Added GitHub CI workflow to run the test suite on push/pull request.

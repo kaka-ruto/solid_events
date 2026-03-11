@@ -2,6 +2,8 @@
 
 class CreateSolidEventsSavedViews < ActiveRecord::Migration[8.1]
   def change
+    return if table_exists?(:solid_events_saved_views)
+
     create_table :solid_events_saved_views do |t|
       t.string :name, null: false
       t.json :filters, default: {}

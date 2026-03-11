@@ -2,6 +2,8 @@
 
 class CreateSolidEventsIncidents < ActiveRecord::Migration[7.1]
   def change
+    return if table_exists?(:solid_events_incidents)
+
     create_table :solid_events_incidents do |t|
       t.string :kind, null: false
       t.string :severity, null: false, default: "warning"

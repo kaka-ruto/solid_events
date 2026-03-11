@@ -2,6 +2,8 @@
 
 class CreateSolidEventsIncidentEvents < ActiveRecord::Migration[8.1]
   def change
+    return if table_exists?(:solid_events_incident_events)
+
     create_table :solid_events_incident_events do |t|
       t.references :incident, null: false, foreign_key: {to_table: :solid_events_incidents}
       t.string :action, null: false

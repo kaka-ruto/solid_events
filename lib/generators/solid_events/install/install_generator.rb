@@ -17,7 +17,7 @@ module SolidEvents
         [
           "",
           '\\1# Configure Solid Events',
-          '\\1config.solid_events.connects_to = { database: { writing: :solid_events } }'
+          '\\1config.solid_events.connects_to = { database: { writing: :events } }'
         ].join("\n")
       end
     end
