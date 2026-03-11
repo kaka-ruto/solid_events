@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 SolidEvents.configure do |config|
-  # config.connects_to = { database: { writing: :solid_events } }
+  # config.connects_to = { database: { writing: :events } }
   config.ignore_paths = ["/up", "/health", "/assets", "/solid_events", "/solid_errors"]
   config.ignore_models = ["Ahoy::Event", "AuditLog"]
   # Namespace defaults are ignored across model links, SQL noise, and job traces.

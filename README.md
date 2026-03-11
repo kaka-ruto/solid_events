@@ -143,7 +143,7 @@ We provide sane defaults (ignoring internal Rails tables), but you can tune exac
 SolidEvents.configure do |config|
   # 1. Database Isolation (Recommended)
   # Prevents logging writes from slowing down your main application.
-  config.connects_to = { database: { writing: :solid_events } }
+  config.connects_to = { database: { writing: :events } }
 
   # 2. Privacy & Noise Control
   # We automatically ignore SolidQueue, SolidCache, ActionMailbox, etc.

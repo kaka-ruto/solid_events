@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [v0.2.3] - 2026-03-11
+
+- Aligned installer/task conventions with sibling Solid gems: use `events` database key, `db/events_schema.rb`, and `db/events_migrate`.
+- Kept v0.2.2 migration idempotency fixes for schema-first `db:prepare` workflows.
+
 ## [v0.2.2] - 2026-03-11
 
 - Fixed installer production config to use `config.solid_events.connects_to = { database: { writing: :events } }` so generated config matches common `database.yml` naming.
